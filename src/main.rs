@@ -1,6 +1,8 @@
 mod menu;
 mod pong;
 mod snake;
+mod invaders;
+mod sound_effect;
 
 use crate::menu::GameMenu;
 use crate::pong::Pong;
@@ -15,6 +17,7 @@ use pixels_graphics_lib::prelude::*;
 use std::collections::HashSet;
 use log::LevelFilter;
 use winit::event::VirtualKeyCode;
+use crate::invaders::Invaders;
 
 const SCREEN_WIDTH: usize = 160;
 const SCREEN_HEIGHT: usize = 144;
@@ -66,10 +69,13 @@ fn main() -> Result<()> {
     run(
         160,
         144,
-        WindowScaling::Auto,
         "Games",
         system,
-        ExecutionSpeed::new(60),
+        Options{
+            ups: 60,
+            vsync: true,
+            ..Options::default()
+        },
     )?;
     Ok(())
 }
@@ -114,6 +120,7 @@ impl System for GameHost {
                 GameUpdateResult::Push(new_game) => match new_game {
                     GameName::Pong => self.game_stack.push(Pong::new()),
                     GameName::Snake => self.game_stack.push(Snake::new()),
+                    GameName::Invaders => self.game_stack.push(Invaders::new()),
                 },
                 GameUpdateResult::Pop => {
                     self.game_stack.remove(self.game_stack.len() - 1);
@@ -130,24 +137,18 @@ impl System for GameHost {
         if let Some(game) = self.game_stack.last() {
             game.render(graphics);
         }
-        let txt = self
-            .held_keys
-            .iter()
-            .map(|k| format!("{k:?}"))
-            .collect::<Vec<String>>()
-            .join(", ");
-        graphics.draw_text(
-            &txt,
-            TextPos::Px(0, SCREEN_HEIGHT as isize),
-            (CLR_1, Small, LeftBottom),
-        );
-    }
-
-    fn on_key_pressed(&mut self, keys: Vec<VirtualKeyCode>) {
-        if let Some(game) = self.game_stack.last_mut() {
-            for key in keys {
-                game.on_key_press(key)
-            }
+        if cfg!(debug_assertions) {
+            let txt = self
+                .held_keys
+                .iter()
+                .map(|k| format!("{k:?}"))
+                .collect::<Vec<String>>()
+                .join(", ");
+            graphics.draw_text(
+                &txt,
+                TextPos::Px(0, SCREEN_HEIGHT as isize),
+                (CLR_1, Small, LeftBottom),
+            );
         }
     }
 
@@ -158,8 +159,13 @@ impl System for GameHost {
     }
 
     fn on_key_up(&mut self, keys: Vec<VirtualKeyCode>) {
-        for key in keys {
-            self.held_keys.remove(&key);
+        for key in &keys {
+            self.held_keys.remove(key);
+        }
+        if let Some(game) = self.game_stack.last_mut() {
+            for key in &keys {
+                game.on_key_press(*key)
+            }
         }
     }
 
@@ -179,6 +185,7 @@ trait Game {
 enum GameName {
     Pong,
     Snake,
+    Invaders,
 }
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]

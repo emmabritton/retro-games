@@ -25,7 +25,7 @@ A few simple retro games built with [pixels-graphics-lib](https://github.com/emm
 
 # Screenshots
 
-![pong](/.github/pong.png)
-![snake](/.github/snake.png)
+![pong](/.github/screenshots/pong.png)
+![snake](/.github/screenshots/snake.png)
 
 

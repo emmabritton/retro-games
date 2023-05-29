@@ -1,3 +1,4 @@
+use audio_engine::AudioEngine;
 use crate::pong::Direction::*;
 use crate::GameUpdateResult::{Nothing, Pop};
 use crate::{Game, GameUpdateResult, CLR_2, CLR_3, SCREEN_HEIGHT, SCREEN_WIDTH};
@@ -9,6 +10,7 @@ use pixels_graphics_lib::buffer_graphics_lib::text::Text;
 use pixels_graphics_lib::buffer_graphics_lib::text::TextSize::Large;
 use pixels_graphics_lib::Timing;
 use winit::event::VirtualKeyCode;
+use crate::sound_effect::{NewSoundEffect, SoundEffect};
 
 const PADDLE_X_H: usize = 0;
 const PADDLE_X_C: usize = SCREEN_WIDTH - 6;
@@ -61,7 +63,6 @@ impl Ball {
     }
 }
 
-#[derive(Debug)]
 pub struct Pong {
     human: Player,
     cpu: Player,
@@ -69,10 +70,19 @@ pub struct Pong {
     separator: Drawable<Rect>,
     serving: bool,
     result: GameUpdateResult,
+    audio_engine: AudioEngine,
+    paddle: SoundEffect,
+    miss: SoundEffect,
+    wall: SoundEffect
 }
 
 impl Pong {
     pub fn new() -> Box<Self> {
+        let audio_engine = AudioEngine::new().unwrap();
+        let wall = audio_engine.load_from_bytes(include_bytes!("../assets/wall.wav"), 0.2).unwrap();
+        let paddle = audio_engine.load_from_bytes(include_bytes!("../assets/paddle.wav"), 0.2).unwrap();
+        let miss = audio_engine.load_from_bytes(include_bytes!("../assets/ball.wav"), 0.4).unwrap();
+
         let separator = Drawable::from_obj(
             Rect::new(
                 (SCREEN_WIDTH / 2 - 1, 0),
@@ -82,11 +92,15 @@ impl Pong {
         );
         Box::new(Self {
             result: Nothing,
+            paddle,
+            miss,
             serving: true,
             human: Player::new(PADDLE_X_H),
             cpu: Player::new(PADDLE_X_C),
             ball: Ball::new(),
             separator,
+            wall,
+            audio_engine
         })
     }
 }
@@ -133,6 +147,10 @@ impl Game for Pong {
     }
 
     fn update(&mut self, timing: &Timing, held_keys: &Vec<&VirtualKeyCode>) -> GameUpdateResult {
+        self.wall.update(timing);
+        self.paddle.update(timing);
+        self.miss.update(timing);
+
         let time_since_start = timing.now.duration_since(timing.started_at).as_secs_f64();
         if self.human.next_move <= time_since_start {
             if held_keys.contains(&&VirtualKeyCode::Up) {
@@ -159,28 +177,34 @@ impl Game for Pong {
                     if self.ball.last_bounce_side != Top {
                         self.ball.direction = if self.ball.direction == 45 { 135 } else { 225 };
                         self.ball.last_bounce_side = Top;
+                        self.wall.play();
                     }
                 } else if ball_center.y == SCREEN_HEIGHT as isize {
                     if self.ball.last_bounce_side != Bottom {
                         self.ball.direction = if self.ball.direction == 135 { 45 } else { 315 };
                         self.ball.last_bounce_side = Bottom;
+                        self.wall.play();
                     }
                 } else if self.human.paddle.obj().contains(ball_center) {
                     if self.ball.last_bounce_side != Left {
                         self.ball.direction = if self.ball.direction == 315 { 45 } else { 135 };
                         self.ball.last_bounce_side = Left;
+                        self.paddle.play();
                     }
                 } else if self.cpu.paddle.obj().contains(ball_center) {
                     if self.ball.last_bounce_side != Right {
                         self.ball.direction = if self.ball.direction == 135 { 225 } else { 315 };
                         self.ball.last_bounce_side = Right;
+                        self.paddle.play();
                     }
                 } else if ball_center.x == 0 {
                     self.cpu.score += 1;
                     self.reset_play();
+                    self.miss.play();
                 } else if ball_center.x == SCREEN_WIDTH as isize {
                     self.human.score += 1;
                     self.reset_play();
+                    self.miss.play();
                 }
             }
             self.ball.next_move -= timing.fixed_time_step;

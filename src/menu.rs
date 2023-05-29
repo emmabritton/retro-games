@@ -1,4 +1,4 @@
-use crate::GameName::{Pong, Snake};
+use crate::GameName::{Invaders, Pong, Snake};
 use crate::GameUpdateResult::{Nothing, Pop, Push};
 use crate::{Game, GameUpdateResult, CLR_2, CLR_3};
 use pixels_graphics_lib::buffer_graphics_lib::drawable::{fill, Drawable};
@@ -15,7 +15,7 @@ use pixels_graphics_lib::prelude::*;
 use winit::event::VirtualKeyCode;
 
 const TITLE: &str = "Games";
-const OPTIONS: [&str; 2] = ["Pong", "Snake"];
+const OPTIONS: [&str; 3] = ["Pong", "Snake", "Invaders"];
 const TITLE_POS: TextPos = Px(8, 8);
 const CURSOR_X: isize = 8;
 const MENU_X: isize = 20;
@@ -92,6 +92,7 @@ impl Game for GameMenu {
             VirtualKeyCode::Return => match self.cursor_idx {
                 0 => self.result = Push(Pong),
                 1 => self.result = Push(Snake),
+                2 => self.result = Push(Invaders),
                 _ => {}
             },
             VirtualKeyCode::Escape => self.result = Pop,

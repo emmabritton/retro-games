@@ -11,9 +11,10 @@ categories = ["games"]
 description = "A few simple games implemented using pixels-graphics-lib"
 
 [dependencies]
-pixels-graphics-lib = "0.8.1"
-winit = "0.27.2"
+pixels-graphics-lib = "0.11.3"
+winit = "0.28.3"
 log = "0.4.17"
 env_logger = "0.10.0"
 color-eyre = "0.6.2"
 fastrand = "1.8.0"
+audio-engine = "0.4.5"

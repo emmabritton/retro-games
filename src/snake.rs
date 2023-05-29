@@ -1,4 +1,5 @@
 use std::ops::Neg;
+use audio_engine::AudioEngine;
 use crate::{Game, GameUpdateResult, CLR_1, CLR_2, CLR_3, CLR_0, SCREEN_WIDTH, SCREEN_HEIGHT};
 use pixels_graphics_lib::buffer_graphics_lib::prelude::*;
 use pixels_graphics_lib::buffer_graphics_lib::shapes::CreateDrawable;
@@ -9,6 +10,7 @@ use pixels_graphics_lib::prelude::*;
 use crate::GameUpdateResult::{Nothing, Pop};
 use crate::snake::Direction::*;
 use crate::snake::State::*;
+use crate::sound_effect::{NewSoundEffect, SoundEffect};
 
 const TILE_SIZE: usize = 8;
 const ARENA_WIDTH: usize = 18;
@@ -54,7 +56,6 @@ impl Direction {
     }
 }
 
-#[derive(Debug)]
 pub struct Snake {
     fruit: Drawable<Circle>,
     segment: Drawable<Rect>,
@@ -68,11 +69,17 @@ pub struct Snake {
     score: usize,
     state: State,
     direction: Direction,
-    next_dying_anim: f64
+    next_dying_anim: f64,
+    audio_engine: AudioEngine,
+    apple: SoundEffect,
+    death: SoundEffect,
 }
 
 impl Snake {
     pub fn new() -> Box<Self> {
+        let audio_engine = AudioEngine::new().unwrap();
+        let apple = audio_engine.load_from_bytes(include_bytes!("../assets/apple.wav"), 0.25).unwrap();
+        let death = audio_engine.load_from_bytes(include_bytes!("../assets/death.wav"), 3.2).unwrap();
         let fruit = Drawable::from_obj(
             Circle::new((TILE_SIZE / 2, TILE_SIZE / 2), TILE_SIZE/ 2-1),
             fill(CLR_3),
@@ -98,7 +105,10 @@ impl Snake {
             result: Nothing,
             state: Playing,
             next_dying_anim: DYING_ANIM_RATE,
-            direction: Right
+            audio_engine,
+            direction: Right,
+            apple,
+            death
         })
     }
 }
@@ -207,6 +217,8 @@ impl Game for Snake {
     }
 
     fn update(&mut self, timing: &Timing, _: &Vec<&VirtualKeyCode>) -> GameUpdateResult {
+        self.apple.update(timing);
+        self.death.update(timing);
         match self.state {
             Playing => {
                 if self.body.len() == (ARENA_HEIGHT * ARENA_WIDTH) {
@@ -230,11 +242,13 @@ impl Game for Snake {
                     if next_tile.x == 0 || next_tile.y == 0 || next_tile.x == ARENA_WIDTH as isize +1 || next_tile.y == ARENA_HEIGHT as isize+1 ||
                         self.body.contains(&next_tile) {
                         self.state = Dying;
+                        self.death.play();
                         return self.result;
                     }
 
                     if let Some(i) = self.fruits.iter().position(|fruit| fruit == &next_tile) {
                         self.fruits.remove(i);
+                        self.apple.play();
                         self.body.insert(0, next_tile);
                         self.next_move = self.move_speed;
                         self.score += SCORE_PER_FRUIT;
