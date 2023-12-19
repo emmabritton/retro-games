@@ -1,10 +1,10 @@
-use pixels_graphics_lib::buffer_graphics_lib::prelude::*;
-use pixels_graphics_lib::buffer_graphics_lib::prelude::Positioning::LeftTop;
-use pixels_graphics_lib::buffer_graphics_lib::prelude::TextPos::Px;
-use pixels_graphics_lib::graphics_shapes::triangle::FlatSide;
 use crate::GameName::{Invaders, Pong, Snake};
 use crate::GameUpdateResult::{Nothing, Pop, Push};
 use crate::{Game, GameUpdateResult, CLR_2, CLR_3};
+use pixels_graphics_lib::buffer_graphics_lib::prelude::Positioning::LeftTop;
+use pixels_graphics_lib::buffer_graphics_lib::prelude::TextPos::Px;
+use pixels_graphics_lib::buffer_graphics_lib::prelude::*;
+use pixels_graphics_lib::graphics_shapes::triangle::FlatSide;
 use pixels_graphics_lib::prelude::*;
 
 const TITLE: &str = "Games";

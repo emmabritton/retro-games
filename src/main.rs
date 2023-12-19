@@ -1,29 +1,26 @@
+mod invaders;
 mod menu;
 mod pong;
 mod snake;
-mod invaders;
 mod sound_effect;
 
+use crate::invaders::Invaders;
 use crate::menu::GameMenu;
 use crate::pong::Pong;
 use crate::snake::Snake;
 use color_eyre::Result;
+use log::LevelFilter;
 use pixels_graphics_lib::buffer_graphics_lib::color::Color;
 use pixels_graphics_lib::buffer_graphics_lib::text::format::Positioning::LeftBottom;
 use pixels_graphics_lib::buffer_graphics_lib::text::pos::TextPos;
 use pixels_graphics_lib::buffer_graphics_lib::text::TextSize::Small;
+use pixels_graphics_lib::buffer_graphics_lib::Graphics;
 use pixels_graphics_lib::prefs::WindowPreferences;
 use pixels_graphics_lib::prelude::*;
 use std::collections::HashSet;
-use log::LevelFilter;
-use pixels_graphics_lib::buffer_graphics_lib::Graphics;
-use crate::invaders::Invaders;
 
 const SCREEN_WIDTH: usize = 160;
 const SCREEN_HEIGHT: usize = 144;
-const TILES_SIZE: usize = 8;
-const TILES_HORZ: usize = 20;
-const TILES_VERT: usize = 18;
 
 const CLR_3: Color = Color {
     r: 15,
@@ -53,8 +50,6 @@ const CLR_0: Color = Color {
     a: 255,
 };
 
-const COLORS: [Color; 4] = [CLR_0, CLR_1, CLR_2, CLR_3];
-
 fn main() -> Result<()> {
     color_eyre::install()?;
     env_logger::Builder::new()
@@ -71,7 +66,7 @@ fn main() -> Result<()> {
         144,
         "Games",
         system,
-        Options{
+        Options {
             ups: 60,
             vsync: true,
             ..Options::default()
@@ -177,6 +172,7 @@ impl System for GameHost {
 trait Game {
     fn render(&self, graphics: &mut Graphics);
     fn on_key_press(&mut self, key: VirtualKeyCode);
+    #[allow(clippy::ptr_arg)] //breaks other code if changed
     fn update(&mut self, timing: &Timing, held_keys: &Vec<&VirtualKeyCode>) -> GameUpdateResult;
     fn resuming(&mut self);
 }

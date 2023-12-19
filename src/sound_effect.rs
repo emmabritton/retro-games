@@ -1,15 +1,15 @@
-use std::io::Cursor;
 use audio_engine::{AudioEngine, Sound, WavDecoder};
 use color_eyre::eyre::eyre;
-use pixels_graphics_lib::Timing;
 use color_eyre::Result;
+use pixels_graphics_lib::Timing;
+use std::io::Cursor;
 
 pub trait NewSoundEffect {
     fn load_from_bytes(&self, bytes: &'static [u8], duration: f64) -> Result<SoundEffect>;
 }
 
 impl NewSoundEffect for AudioEngine {
-    fn load_from_bytes(&self, bytes: &'static [u8], duration: f64) -> Result<SoundEffect>{
+    fn load_from_bytes(&self, bytes: &'static [u8], duration: f64) -> Result<SoundEffect> {
         let decoder = WavDecoder::new(Cursor::new(bytes))?;
         let sound = self.new_sound(decoder).map_err(|e| eyre!(e))?;
         Ok(SoundEffect::new(sound, duration))
@@ -21,12 +21,18 @@ pub struct SoundEffect {
     is_playing: bool,
     duration: f64,
     next_play_in: f64,
-    loops: bool
+    loops: bool,
 }
 
 impl SoundEffect {
     pub fn new(sound: Sound, duration: f64) -> Self {
-        Self { sound, is_playing: false, duration, next_play_in: 0.0,loops: false }
+        Self {
+            sound,
+            is_playing: false,
+            duration,
+            next_play_in: 0.0,
+            loops: false,
+        }
     }
 
     pub fn play(&mut self) {
