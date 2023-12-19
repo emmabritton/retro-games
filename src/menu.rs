@@ -8,7 +8,7 @@ use pixels_graphics_lib::graphics_shapes::triangle::FlatSide;
 use pixels_graphics_lib::prelude::*;
 
 const TITLE: &str = "Games";
-const OPTIONS: [&str; 3] = ["Pong", "Snake", "Invaders"];
+const OPTIONS: [&str; 2] = ["Pong", "Snake"];//, "Invaders"];
 const TITLE_POS: TextPos = Px(8, 8);
 const CURSOR_X: isize = 8;
 const MENU_X: isize = 20;
@@ -66,34 +66,34 @@ impl Game for GameMenu {
         }
     }
 
-    fn on_key_press(&mut self, key: VirtualKeyCode) {
+    fn on_key_press(&mut self, key: KeyCode) {
         match key {
-            VirtualKeyCode::Up => {
+            KeyCode::ArrowUp => {
                 if self.cursor_idx == 0 {
                     self.cursor_idx = self.options.len() - 1;
                 } else {
                     self.cursor_idx -= 1;
                 }
             }
-            VirtualKeyCode::Down => {
+            KeyCode::ArrowDown => {
                 if self.cursor_idx == self.options.len() - 1 {
                     self.cursor_idx = 0;
                 } else {
                     self.cursor_idx += 1;
                 }
             }
-            VirtualKeyCode::Return => match self.cursor_idx {
+            KeyCode::Enter => match self.cursor_idx {
                 0 => self.result = Push(Pong),
                 1 => self.result = Push(Snake),
                 2 => self.result = Push(Invaders),
                 _ => {}
             },
-            VirtualKeyCode::Escape => self.result = Pop,
+            KeyCode::Escape => self.result = Pop,
             _ => {}
         }
     }
 
-    fn update(&mut self, _: &Timing, _: &Vec<&VirtualKeyCode>) -> GameUpdateResult {
+    fn update(&mut self, _: &Timing, _: &Vec<&KeyCode>) -> GameUpdateResult {
         self.cursor = self.cursor.with_move((
             CURSOR_X,
             MENU_START_Y + 1 + (self.cursor_idx * MENU_STEP) as isize,

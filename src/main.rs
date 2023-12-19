@@ -22,33 +22,13 @@ use std::collections::HashSet;
 const SCREEN_WIDTH: usize = 160;
 const SCREEN_HEIGHT: usize = 144;
 
-const CLR_3: Color = Color {
-    r: 15,
-    g: 56,
-    b: 15,
-    a: 255,
-};
+const CLR_3: Color = Color::rgb(15,56,15);
 
-const CLR_2: Color = Color {
-    r: 48,
-    g: 98,
-    b: 48,
-    a: 255,
-};
+const CLR_2: Color = Color::rgb(48,98,48);
 
-const CLR_1: Color = Color {
-    r: 139,
-    g: 172,
-    b: 15,
-    a: 255,
-};
+const CLR_1: Color = Color::rgb(120,145,15);
 
-const CLR_0: Color = Color {
-    r: 155,
-    g: 188,
-    b: 15,
-    a: 255,
-};
+const CLR_0: Color = Color::rgb(155,188,15);
 
 fn main() -> Result<()> {
     color_eyre::install()?;
@@ -77,7 +57,7 @@ fn main() -> Result<()> {
 
 struct GameHost {
     game_stack: Vec<Box<dyn Game>>,
-    held_keys: HashSet<VirtualKeyCode>,
+    held_keys: HashSet<KeyCode>,
 }
 
 impl GameHost {
@@ -90,17 +70,17 @@ impl GameHost {
 }
 
 impl System for GameHost {
-    fn action_keys(&mut self) -> &[VirtualKeyCode] {
+    fn keys_used(&self) -> &[KeyCode] {
         &[
-            VirtualKeyCode::Up,
-            VirtualKeyCode::Down,
-            VirtualKeyCode::Left,
-            VirtualKeyCode::Right,
-            VirtualKeyCode::Escape,
-            VirtualKeyCode::Space,
-            VirtualKeyCode::Return,
-            VirtualKeyCode::RControl,
-            VirtualKeyCode::LControl,
+            KeyCode::ArrowUp,
+            KeyCode::ArrowDown,
+            KeyCode::ArrowLeft,
+            KeyCode::ArrowRight,
+            KeyCode::Escape,
+            KeyCode::Space,
+            KeyCode::Enter,
+            KeyCode::ControlRight,
+            KeyCode::ControlLeft,
         ]
     }
 
@@ -147,13 +127,13 @@ impl System for GameHost {
         }
     }
 
-    fn on_key_down(&mut self, keys: Vec<VirtualKeyCode>) {
+    fn on_key_down(&mut self, keys: Vec<KeyCode>) {
         for key in keys {
             self.held_keys.insert(key);
         }
     }
 
-    fn on_key_up(&mut self, keys: Vec<VirtualKeyCode>) {
+    fn on_key_up(&mut self, keys: Vec<KeyCode>) {
         for key in &keys {
             self.held_keys.remove(key);
         }
@@ -171,9 +151,9 @@ impl System for GameHost {
 
 trait Game {
     fn render(&self, graphics: &mut Graphics);
-    fn on_key_press(&mut self, key: VirtualKeyCode);
+    fn on_key_press(&mut self, key: KeyCode);
     #[allow(clippy::ptr_arg)] //breaks other code if changed
-    fn update(&mut self, timing: &Timing, held_keys: &Vec<&VirtualKeyCode>) -> GameUpdateResult;
+    fn update(&mut self, timing: &Timing, held_keys: &Vec<&KeyCode>) -> GameUpdateResult;
     fn resuming(&mut self);
 }
 

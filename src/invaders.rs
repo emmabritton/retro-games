@@ -387,10 +387,10 @@ impl Game for Invaders {
         }
     }
 
-    fn on_key_press(&mut self, key: VirtualKeyCode) {
+    fn on_key_press(&mut self, key: KeyCode) {
         match key {
-            VirtualKeyCode::Escape => self.result = Pop,
-            VirtualKeyCode::Space => {
+            KeyCode::Escape => self.result = Pop,
+            KeyCode::Space => {
                 if self.player.attacks.len() < MAX_PLAYER_ATTACKS && self.player.next_attack < 0.0 {
                     self.player
                         .attacks
@@ -404,7 +404,7 @@ impl Game for Invaders {
     }
 
     #[allow(clippy::collapsible_if)] //for readability
-    fn update(&mut self, timing: &Timing, held_keys: &Vec<&VirtualKeyCode>) -> GameUpdateResult {
+    fn update(&mut self, timing: &Timing, held_keys: &Vec<&KeyCode>) -> GameUpdateResult {
         self.ufo.active_sound.update(timing);
         self.ufo.death_sound.update(timing);
         self.player.attack_sound.update(timing);
@@ -413,12 +413,12 @@ impl Game for Invaders {
         self.aliens.move_sounds[0].update(timing);
         self.aliens.move_sounds[1].update(timing);
         if self.player.next_move < 0.0 {
-            if held_keys.contains(&&VirtualKeyCode::Left) {
+            if held_keys.contains(&&KeyCode::ArrowLeft) {
                 if self.player.ship.left() > 0 {
                     self.player.ship = self.player.ship.with_translation((-1, 0));
                     self.player.next_move = PLAYER_SPEED;
                 }
-            } else if held_keys.contains(&&VirtualKeyCode::Right) {
+            } else if held_keys.contains(&&KeyCode::ArrowRight) {
                 if self.player.ship.right() < SCREEN_WIDTH as isize {
                     self.player.ship = self.player.ship.with_translation((1, 0));
                     self.player.next_move = PLAYER_SPEED;

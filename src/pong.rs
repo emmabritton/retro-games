@@ -9,8 +9,8 @@ use pixels_graphics_lib::buffer_graphics_lib::text::format::Positioning::CenterT
 use pixels_graphics_lib::buffer_graphics_lib::text::pos::TextPos;
 use pixels_graphics_lib::buffer_graphics_lib::text::Text;
 use pixels_graphics_lib::buffer_graphics_lib::text::TextSize::Large;
-use pixels_graphics_lib::prelude::VirtualKeyCode;
 use pixels_graphics_lib::{Timer, Timing};
+use pixels_graphics_lib::prelude::KeyCode;
 
 const PADDLE_X_H: usize = 0;
 const PADDLE_X_C: usize = SCREEN_WIDTH - 6;
@@ -142,24 +142,24 @@ impl Game for Pong {
         self.ball.shape.render(graphics);
     }
 
-    fn on_key_press(&mut self, key: VirtualKeyCode) {
-        if self.serving && key == VirtualKeyCode::Space {
+    fn on_key_press(&mut self, key: KeyCode) {
+        if self.serving && key == KeyCode::Space {
             self.serving = false
         }
 
-        if key == VirtualKeyCode::Escape {
+        if key == KeyCode::Escape {
             self.result = Pop;
         }
     }
 
     #[allow(clippy::collapsible_if)] //for readability
-    fn update(&mut self, timing: &Timing, held_keys: &Vec<&VirtualKeyCode>) -> GameUpdateResult {
+    fn update(&mut self, timing: &Timing, held_keys: &Vec<&KeyCode>) -> GameUpdateResult {
         self.wall.update(timing);
         self.paddle.update(timing);
         self.miss.update(timing);
 
         if self.human.next_move.update(timing) {
-            if held_keys.contains(&&VirtualKeyCode::Up) {
+            if held_keys.contains(&&KeyCode::ArrowUp) {
                 if self.human.paddle.obj().top() > 0 {
                     self.human.paddle = self
                         .human
@@ -167,7 +167,7 @@ impl Game for Pong {
                         .with_translation((0, -PADDLE_MOVE_DISTANCE));
                     self.human.next_move.reset();
                 }
-            } else if held_keys.contains(&&VirtualKeyCode::Down) {
+            } else if held_keys.contains(&&KeyCode::ArrowDown) {
                 if self.human.paddle.obj().bottom() < SCREEN_HEIGHT as isize {
                     self.human.paddle = self
                         .human

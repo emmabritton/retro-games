@@ -217,39 +217,39 @@ impl Game for Snake {
         }
     }
 
-    fn on_key_press(&mut self, key: VirtualKeyCode) {
+    fn on_key_press(&mut self, key: KeyCode) {
         match key {
-            VirtualKeyCode::Up => {
+            KeyCode::ArrowUp => {
                 let next = self.body[0] + Up.delta();
                 if self.body[1] != next {
                     self.direction = Up;
                 }
             }
-            VirtualKeyCode::Left => {
+            KeyCode::ArrowLeft => {
                 let next = self.body[0] + Left.delta();
                 if self.body[1] != next {
                     self.direction = Left;
                 }
             }
-            VirtualKeyCode::Right => {
+            KeyCode::ArrowRight => {
                 let next = self.body[0] + Right.delta();
                 if self.body[1] != next {
                     self.direction = Right;
                 }
             }
-            VirtualKeyCode::Down => {
+            KeyCode::ArrowDown => {
                 let next = self.body[0] + Down.delta();
                 if self.body[1] != next {
                     self.direction = Down;
                 }
             }
-            VirtualKeyCode::Escape => self.result = Pop,
+            KeyCode::Escape => self.result = Pop,
             _ => {}
         }
     }
 
     #[allow(clippy::collapsible_if)] //for readability
-    fn update(&mut self, timing: &Timing, _: &Vec<&VirtualKeyCode>) -> GameUpdateResult {
+    fn update(&mut self, timing: &Timing, _: &Vec<&KeyCode>) -> GameUpdateResult {
         self.apple.update(timing);
         self.death.update(timing);
         match self.state {
