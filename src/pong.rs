@@ -1,7 +1,7 @@
 use crate::pong::Direction::*;
 use crate::sound_effect::{NewSoundEffect, SoundEffect};
 use crate::GameUpdateResult::{Nothing, Pop};
-use crate::{Game, GameUpdateResult, CLR_2, CLR_3, SCREEN_HEIGHT, SCREEN_WIDTH};
+use crate::{Game, GameUpdateResult, CLR_2, CLR_3, SCREEN_HEIGHT, SCREEN_WIDTH, INPUT_DELAY};
 use audio_engine::AudioEngine;
 use pixels_graphics_lib::buffer_graphics_lib::prelude::*;
 use pixels_graphics_lib::buffer_graphics_lib::shapes::CreateDrawable;
@@ -11,6 +11,7 @@ use pixels_graphics_lib::buffer_graphics_lib::text::Text;
 use pixels_graphics_lib::buffer_graphics_lib::text::TextSize::Large;
 use pixels_graphics_lib::{Timer, Timing};
 use pixels_graphics_lib::prelude::KeyCode;
+use simple_game_utils::controller::GameController;
 
 const PADDLE_X_H: usize = 0;
 const PADDLE_X_C: usize = SCREEN_WIDTH - 6;
@@ -74,6 +75,8 @@ pub struct Pong {
     paddle: SoundEffect,
     miss: SoundEffect,
     wall: SoundEffect,
+    input_timer: Timer,
+    controller: GameController,
 }
 
 impl Pong {
@@ -107,6 +110,8 @@ impl Pong {
             separator,
             wall,
             audio_engine,
+            controller: GameController::new_unchecked(),
+            input_timer: Timer::new(INPUT_DELAY),
         })
     }
 }
@@ -142,24 +147,27 @@ impl Game for Pong {
         self.ball.shape.render(graphics);
     }
 
-    fn on_key_press(&mut self, key: KeyCode) {
-        if self.serving && key == KeyCode::Space {
-            self.serving = false
-        }
+    fn on_key_press(&mut self, _: KeyCode) {
 
-        if key == KeyCode::Escape {
-            self.result = Pop;
-        }
     }
 
     #[allow(clippy::collapsible_if)] //for readability
     fn update(&mut self, timing: &Timing, held_keys: &Vec<&KeyCode>) -> GameUpdateResult {
+        self.controller.update();
         self.wall.update(timing);
         self.paddle.update(timing);
         self.miss.update(timing);
 
+        if self.serving && (held_keys.contains(&& KeyCode::Space) || self.controller.action.south){
+            self.serving = false
+        }
+
+        if held_keys.contains(&& KeyCode::Escape ) || self.controller.action.east{
+            self.result = Pop;
+        }
+
         if self.human.next_move.update(timing) {
-            if held_keys.contains(&&KeyCode::ArrowUp) {
+            if held_keys.contains(&&KeyCode::ArrowUp) || self.controller.direction.up {
                 if self.human.paddle.obj().top() > 0 {
                     self.human.paddle = self
                         .human
@@ -167,7 +175,7 @@ impl Game for Pong {
                         .with_translation((0, -PADDLE_MOVE_DISTANCE));
                     self.human.next_move.reset();
                 }
-            } else if held_keys.contains(&&KeyCode::ArrowDown) {
+            } else if held_keys.contains(&&KeyCode::ArrowDown) || self.controller.direction.down {
                 if self.human.paddle.obj().bottom() < SCREEN_HEIGHT as isize {
                     self.human.paddle = self
                         .human

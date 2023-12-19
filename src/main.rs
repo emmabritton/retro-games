@@ -18,17 +18,17 @@ use pixels_graphics_lib::buffer_graphics_lib::Graphics;
 use pixels_graphics_lib::prefs::WindowPreferences;
 use pixels_graphics_lib::prelude::*;
 use std::collections::HashSet;
+use pixels_graphics_lib::buffer_graphics_lib::prelude::*;
 
 const SCREEN_WIDTH: usize = 160;
 const SCREEN_HEIGHT: usize = 144;
 
-const CLR_3: Color = Color::rgb(15,56,15);
+const INPUT_DELAY: f64 = 0.1;
 
-const CLR_2: Color = Color::rgb(48,98,48);
-
-const CLR_1: Color = Color::rgb(120,145,15);
-
-const CLR_0: Color = Color::rgb(155,188,15);
+const CLR_3: Color = GB_3;
+const CLR_2: Color = GB_2;
+const CLR_1: Color = GB_1;
+const CLR_0: Color = GB_0;
 
 fn main() -> Result<()> {
     color_eyre::install()?;

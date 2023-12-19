@@ -2,7 +2,7 @@ use crate::snake::Direction::*;
 use crate::snake::State::*;
 use crate::sound_effect::{NewSoundEffect, SoundEffect};
 use crate::GameUpdateResult::{Nothing, Pop};
-use crate::{Game, GameUpdateResult, CLR_0, CLR_1, CLR_2, CLR_3, SCREEN_HEIGHT, SCREEN_WIDTH};
+use crate::{Game, GameUpdateResult, CLR_0, CLR_1, CLR_2, CLR_3, SCREEN_HEIGHT, SCREEN_WIDTH, INPUT_DELAY};
 use audio_engine::AudioEngine;
 use pixels_graphics_lib::buffer_graphics_lib::prelude::*;
 use pixels_graphics_lib::buffer_graphics_lib::shapes::CreateDrawable;
@@ -11,6 +11,7 @@ use pixels_graphics_lib::buffer_graphics_lib::text::pos::TextPos;
 use pixels_graphics_lib::buffer_graphics_lib::text::TextSize::Large;
 use pixels_graphics_lib::prelude::*;
 use std::ops::Neg;
+use simple_game_utils::controller::GameController;
 
 const TILE_SIZE: usize = 8;
 const ARENA_WIDTH: usize = 18;
@@ -73,6 +74,8 @@ pub struct Snake {
     audio_engine: AudioEngine,
     apple: SoundEffect,
     death: SoundEffect,
+    input_timer: Timer,
+    controller: GameController,
 }
 
 impl Snake {
@@ -113,6 +116,8 @@ impl Snake {
             direction: Right,
             apple,
             death,
+            controller: GameController::new_unchecked(),
+            input_timer: Timer::new(INPUT_DELAY),
         })
     }
 }
@@ -132,6 +137,8 @@ impl Snake {
 }
 
 impl Game for Snake {
+    fn on_key_press(&mut self, _: KeyCode) {}
+
     fn render(&self, graphics: &mut Graphics) {
         graphics.update_translate(ARENA_START + (1, 0));
 
@@ -217,39 +224,40 @@ impl Game for Snake {
         }
     }
 
-    fn on_key_press(&mut self, key: KeyCode) {
-        match key {
-            KeyCode::ArrowUp => {
+    #[allow(clippy::collapsible_if)] //for readability
+    fn update(&mut self, timing: &Timing, held: &Vec<&KeyCode>) -> GameUpdateResult {
+        self.controller.update();
+
+        if self.input_timer.update(timing) {
+            if held.contains(&&KeyCode::ArrowUp) || self.controller.direction.up {
                 let next = self.body[0] + Up.delta();
                 if self.body[1] != next {
+                    self.input_timer.reset();
                     self.direction = Up;
                 }
-            }
-            KeyCode::ArrowLeft => {
+            } else if held.contains(&&KeyCode::ArrowLeft) || self.controller.direction.left {
                 let next = self.body[0] + Left.delta();
                 if self.body[1] != next {
+                    self.input_timer.reset();
                     self.direction = Left;
                 }
-            }
-            KeyCode::ArrowRight => {
+            } else if held.contains(&&KeyCode::ArrowRight) || self.controller.direction.right {
                 let next = self.body[0] + Right.delta();
                 if self.body[1] != next {
+                    self.input_timer.reset();
                     self.direction = Right;
                 }
-            }
-            KeyCode::ArrowDown => {
+            } else if held.contains(&&KeyCode::ArrowDown) || self.controller.direction.down {
                 let next = self.body[0] + Down.delta();
                 if self.body[1] != next {
+                    self.input_timer.reset();
                     self.direction = Down;
                 }
+            } else if held.contains(&&KeyCode::Escape) || self.controller.action.east {
+                self.result = Pop;
             }
-            KeyCode::Escape => self.result = Pop,
-            _ => {}
         }
-    }
 
-    #[allow(clippy::collapsible_if)] //for readability
-    fn update(&mut self, timing: &Timing, _: &Vec<&KeyCode>) -> GameUpdateResult {
         self.apple.update(timing);
         self.death.update(timing);
         match self.state {

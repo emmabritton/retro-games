@@ -1,14 +1,17 @@
 use crate::GameName::{Invaders, Pong, Snake};
 use crate::GameUpdateResult::{Nothing, Pop, Push};
-use crate::{Game, GameUpdateResult, CLR_2, CLR_3};
+use crate::{Game, GameUpdateResult, CLR_2, CLR_3, INPUT_DELAY};
 use pixels_graphics_lib::buffer_graphics_lib::prelude::Positioning::LeftTop;
 use pixels_graphics_lib::buffer_graphics_lib::prelude::TextPos::Px;
 use pixels_graphics_lib::buffer_graphics_lib::prelude::*;
 use pixels_graphics_lib::graphics_shapes::triangle::FlatSide;
 use pixels_graphics_lib::prelude::*;
+use pixels_graphics_lib::prelude::KeyCode::Digit0;
+use simple_game_utils::controller::GameController;
 
 const TITLE: &str = "Games";
-const OPTIONS: [&str; 2] = ["Pong", "Snake"];//, "Invaders"];
+const OPTIONS: [&str; 2] = ["Pong", "Snake"];
+//, "Invaders"];
 const TITLE_POS: TextPos = Px(8, 8);
 const CURSOR_X: isize = 8;
 const MENU_X: isize = 20;
@@ -22,6 +25,8 @@ pub struct GameMenu {
     options: Vec<Text>,
     frame: ShapeCollection,
     result: GameUpdateResult,
+    controller: GameController,
+    input_timer: Timer
 }
 
 impl GameMenu {
@@ -51,6 +56,8 @@ impl GameMenu {
             frame,
             options,
             result: Nothing,
+            controller: GameController::new_unchecked(),
+            input_timer: Timer::new(INPUT_DELAY)
         }
     }
 }
@@ -66,38 +73,44 @@ impl Game for GameMenu {
         }
     }
 
-    fn on_key_press(&mut self, key: KeyCode) {
-        match key {
-            KeyCode::ArrowUp => {
+    fn on_key_press(&mut self, _: KeyCode) {
+
+    }
+
+    fn update(&mut self, timing: &Timing, held_keys: &Vec<&KeyCode>) -> GameUpdateResult {
+        self.cursor = self.cursor.with_move((
+            CURSOR_X,
+            MENU_START_Y + 1 + (self.cursor_idx * MENU_STEP) as isize,
+        ));
+        self.controller.update();
+
+        if self.input_timer.update(timing) {
+            if (held_keys.contains(&&KeyCode::ArrowUp) || self.controller.direction.up) {
+                self.input_timer.reset();
                 if self.cursor_idx == 0 {
                     self.cursor_idx = self.options.len() - 1;
                 } else {
                     self.cursor_idx -= 1;
                 }
-            }
-            KeyCode::ArrowDown => {
+            } else if (held_keys.contains(&&KeyCode::ArrowDown) || self.controller.direction.down) {
+                self.input_timer.reset();
                 if self.cursor_idx == self.options.len() - 1 {
                     self.cursor_idx = 0;
                 } else {
                     self.cursor_idx += 1;
                 }
+            } else if held_keys.contains(&&KeyCode::Enter) || self.controller.action.south {
+                self.input_timer.reset();
+                match self.cursor_idx {
+                    0 => self.result = Push(Pong),
+                    1 => self.result = Push(Snake),
+                    2 => self.result = Push(Invaders),
+                    _ => {}
+                }
+            } else if held_keys.contains(&&KeyCode::Escape) || self.controller.action.east {
+                self.result = Pop
             }
-            KeyCode::Enter => match self.cursor_idx {
-                0 => self.result = Push(Pong),
-                1 => self.result = Push(Snake),
-                2 => self.result = Push(Invaders),
-                _ => {}
-            },
-            KeyCode::Escape => self.result = Pop,
-            _ => {}
         }
-    }
-
-    fn update(&mut self, _: &Timing, _: &Vec<&KeyCode>) -> GameUpdateResult {
-        self.cursor = self.cursor.with_move((
-            CURSOR_X,
-            MENU_START_Y + 1 + (self.cursor_idx * MENU_STEP) as isize,
-        ));
 
         self.result
     }
