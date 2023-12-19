@@ -62,14 +62,14 @@ pub struct Snake {
     wall: Drawable<Rect>,
     body: Vec<Coord>,
     fruits: Vec<Coord>,
-    next_fruit_spawn: f64,
+    next_fruit_spawn: Timer,
     result: GameUpdateResult,
     move_speed: f64,
     next_move: f64,
     score: usize,
     state: State,
     direction: Direction,
-    next_dying_anim: f64,
+    next_dying_anim: Timer,
     audio_engine: AudioEngine,
     apple: SoundEffect,
     death: SoundEffect,
@@ -98,13 +98,13 @@ impl Snake {
             wall,
             body: vec![Coord::new(9, 7), Coord::new(8, 7), Coord::new(7,7)],
             fruits: vec![],
-            next_fruit_spawn: FRUIT_DELAY / 3.0,
+            next_fruit_spawn: Timer::new(FRUIT_DELAY / 3.0),
             next_move: 0.0,
             move_speed: DEFAULT_MOVE_SPEED,
             score: 0,
             result: Nothing,
             state: Playing,
-            next_dying_anim: DYING_ANIM_RATE,
+            next_dying_anim: Timer::new(DYING_ANIM_RATE),
             audio_engine,
             direction: Right,
             apple,
@@ -228,13 +228,11 @@ impl Game for Snake {
                 }
 
                 if self.fruits.len() < MAX_FRUIT_ON_SCREEN {
-                    if self.next_fruit_spawn < 0.0 {
+                    if self.next_fruit_spawn.update(timing) {
                         if let Some(empty) = self.find_empty_slot() {
                             self.fruits.push(empty);
-                            self.next_fruit_spawn = FRUIT_DELAY;
                         }
                     }
-                    self.next_fruit_spawn -= timing.fixed_time_step;
                 }
 
                 if self.next_move < 0.0 {
@@ -254,7 +252,7 @@ impl Game for Snake {
                         self.score += SCORE_PER_FRUIT;
                         self.move_speed -= SPEED_CHANGE_PER_FRUIT;
                         if self.fruits.is_empty() {
-                            self.next_fruit_spawn = 0.2;
+                            self.next_fruit_spawn.remaining = 0.2;
                         }
                     } else {
                         self.body.remove(self.body.len() - 1);
@@ -270,15 +268,13 @@ impl Game for Snake {
             Won => {}
             Dying => {
                 self.fruits.clear();
-                if self.next_dying_anim < 0.0 {
+                if self.next_dying_anim.update(timing) {
                     if self.body.is_empty() {
                        self.state = Dead;
                     } else {
                         self.body.remove(self.body.len() - 1);
-                        self.next_dying_anim = DYING_ANIM_RATE;
                     }
                 }
-                self.next_dying_anim -= timing.fixed_time_step;
             }
             Dead => {}
         }

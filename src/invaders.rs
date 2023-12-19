@@ -1,9 +1,11 @@
 use audio_engine::AudioEngine;
+use pixels_graphics_lib::buffer_graphics_lib::prelude::*;
+use pixels_graphics_lib::buffer_graphics_lib::prelude::Positioning::{RightBottom, RightTop};
+use pixels_graphics_lib::buffer_graphics_lib::prelude::TextPos::Px;
+use pixels_graphics_lib::buffer_graphics_lib::prelude::WrappingStrategy::SpaceBeforeCol;
 use pixels_graphics_lib::graphics_shapes::coord;
 use pixels_graphics_lib::graphics_shapes::triangle::FlatSide;
 use pixels_graphics_lib::prelude::*;
-use pixels_graphics_lib::prelude::Positioning::*;
-use pixels_graphics_lib::prelude::WrappingStrategy::SpaceBeforeCol;
 use crate::{CLR_0, CLR_1, CLR_2, CLR_3, Game, GameUpdateResult, SCREEN_HEIGHT, SCREEN_WIDTH};
 use crate::GameUpdateResult::{Nothing, Pop};
 use crate::sound_effect::{NewSoundEffect, SoundEffect};
@@ -23,24 +25,25 @@ const BASE_START: Coord = Coord::new(10, 100);
 const BASE_SPACE: isize = 40;
 const START_SPEED: f64 = 0.9;
 const END_SPEED: f64 = 0.001;
-const PLAYER_SPEED: f64 = 0.05;
+const PLAYER_SPEED: f64 = 0.01;
 const PLAYER_ATTACK_SPEED: f64 = 0.006;
 const ALIEN_ATTACK_SPEED: f64 = 0.006;
-const PLAYER_ATTACK_RATE: f64 = 1.5;
+// const PLAYER_ATTACK_RATE: f64 = 1.5;
+const PLAYER_ATTACK_RATE: f64 = 0.1;
 const ALIEN_ATTACK_RATE: f64 = 0.1;
-const MAX_PLAYER_ATTACKS: usize = 2;
+// const MAX_PLAYER_ATTACKS: usize = 2;
+const MAX_PLAYER_ATTACKS: usize = 200;
 const MAX_ALIENS_ATTACKS: usize = 4;
 const UFO_SPEED: f64 = 0.07;
-const UFO_RATE: f64 = 5.0;
+const UFO_RATE: f64 = 20.0;
 const SCORE_UFO: usize = 1000;
 const SCORE_INVADER: usize = 50;
 const INVADER_SPEED_START: f64 = 1.0;
 const INVADER_SPEED_MIN: f64 = 0.1;
-const SPEED_DELTA_PER_INVADER: f64 = 0.02;
+const SPEED_DELTA_PER_INVADER: f64 = 0.04;
 const SPEED_DELTA_PER_LEVEL: f64 = 0.1;
 const ALIEN_SIZE: (usize, usize) = (11,8);
 const ALIEN_SPACING: (usize, usize) = (4,4);
-const UFO_ANIM_RATE: f64 = 0.15;
 
 struct Player {
     ship: ShapeCollection,
@@ -252,7 +255,7 @@ impl Game for Invaders {
             graphics.draw_indexed_image((HEART_XY.x + (HEART_SPACE * (i as isize - 1)), HEART_XY.y), &self.heart);
         }
 
-        graphics.draw_text(&format!("Score {: >5}", self.score), SCORE_XY, (CLR_TEXT, Normal, RightTop));
+        graphics.draw_text(&format!("Score {: >5}", self.score), SCORE_XY, (CLR_TEXT, TextSize::Normal, RightTop));
 
         for attack in &self.player.attacks {
             graphics.draw(&self.player.attack.with_move(attack.xy));
@@ -279,7 +282,7 @@ impl Game for Invaders {
         graphics.draw_rect(self.aliens.bounds.clone(), stroke(BLUE));
 
         if cfg!(debug_assertions) {
-            graphics.draw_text(&format!("{:.5} {:.5} {:?} {:.5} {}", self.aliens.move_rate, self.ufo.next_appearance, self.ufo.xy, self.ufo.next_move, &self.aliens.alive_count()), TextPos::Px(SCREEN_WIDTH as isize, SCREEN_HEIGHT as isize), (CLR_1, Small, SpaceBeforeCol(8), RightBottom));
+            graphics.draw_text(&format!("{:.5} {:.5} {:?} {:.5} {}", self.aliens.move_rate, self.ufo.next_appearance, self.ufo.xy, self.ufo.next_move, &self.aliens.alive_count()), TextPos::Px(SCREEN_WIDTH as isize, SCREEN_HEIGHT as isize), (CLR_1, TextSize::Small, SpaceBeforeCol(8), RightBottom));
         }
     }
 

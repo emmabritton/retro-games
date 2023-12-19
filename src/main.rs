@@ -16,7 +16,7 @@ use pixels_graphics_lib::prefs::WindowPreferences;
 use pixels_graphics_lib::prelude::*;
 use std::collections::HashSet;
 use log::LevelFilter;
-use winit::event::VirtualKeyCode;
+use pixels_graphics_lib::buffer_graphics_lib::Graphics;
 use crate::invaders::Invaders;
 
 const SCREEN_WIDTH: usize = 160;
@@ -95,8 +95,8 @@ impl GameHost {
 }
 
 impl System for GameHost {
-    fn action_keys(&self) -> Vec<VirtualKeyCode> {
-        vec![
+    fn action_keys(&mut self) -> &[VirtualKeyCode] {
+        &[
             VirtualKeyCode::Up,
             VirtualKeyCode::Down,
             VirtualKeyCode::Left,
@@ -109,7 +109,7 @@ impl System for GameHost {
         ]
     }
 
-    fn window_prefs(&self) -> Option<WindowPreferences> {
+    fn window_prefs(&mut self) -> Option<WindowPreferences> {
         Some(WindowPreferences::new("app", "emmabritton", "retro_games").unwrap())
     }
 
@@ -132,7 +132,7 @@ impl System for GameHost {
         }
     }
 
-    fn render(&self, graphics: &mut Graphics) {
+    fn render(&mut self, graphics: &mut Graphics) {
         graphics.clear(CLR_0);
         if let Some(game) = self.game_stack.last() {
             game.render(graphics);
@@ -169,7 +169,7 @@ impl System for GameHost {
         }
     }
 
-    fn should_exit(&self) -> bool {
+    fn should_exit(&mut self) -> bool {
         self.game_stack.is_empty()
     }
 }

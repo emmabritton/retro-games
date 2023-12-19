@@ -8,21 +8,21 @@ use pixels_graphics_lib::buffer_graphics_lib::text::format::Positioning::CenterT
 use pixels_graphics_lib::buffer_graphics_lib::text::pos::TextPos;
 use pixels_graphics_lib::buffer_graphics_lib::text::Text;
 use pixels_graphics_lib::buffer_graphics_lib::text::TextSize::Large;
-use pixels_graphics_lib::Timing;
-use winit::event::VirtualKeyCode;
+use pixels_graphics_lib::{Timer, Timing};
+use pixels_graphics_lib::prelude::VirtualKeyCode;
 use crate::sound_effect::{NewSoundEffect, SoundEffect};
 
 const PADDLE_X_H: usize = 0;
 const PADDLE_X_C: usize = SCREEN_WIDTH - 6;
 const SCORE_H: Coord = Coord::new(40, 6);
 const SCORE_C: Coord = Coord::new(120, 6);
-const PADDLE_MOVE_RATE: f64 = 0.01;
-const BALL_MOVE_RATE: f64 = 0.001;
+const BALL_MOVE_RATE: f64 = 0.01;
+const PADDLE_MOVE_DISTANCE: isize = 2;
 
 #[derive(Debug)]
 struct Player {
     paddle: Drawable<Rect>,
-    next_move: f64,
+    next_move: Timer,
     score: usize,
 }
 
@@ -30,7 +30,7 @@ impl Player {
     pub fn new(x: usize) -> Self {
         Self {
             paddle: Drawable::from_obj(Rect::new((x, 0), (x + 6, 30)), fill(CLR_3)),
-            next_move: 0.0,
+            next_move: Timer::new_once(0.0001),
             score: 0,
         }
     }
@@ -151,17 +151,17 @@ impl Game for Pong {
         self.paddle.update(timing);
         self.miss.update(timing);
 
-        let time_since_start = timing.now.duration_since(timing.started_at).as_secs_f64();
-        if self.human.next_move <= time_since_start {
+        if self.human.next_move.update(timing) {
             if held_keys.contains(&&VirtualKeyCode::Up) {
                 if self.human.paddle.obj().top() > 0 {
-                    self.human.paddle = self.human.paddle.with_translation((0, -1));
-                    self.human.next_move = time_since_start + PADDLE_MOVE_RATE;
+
+                    self.human.paddle = self.human.paddle.with_translation((0, -PADDLE_MOVE_DISTANCE));
+                    self.human.next_move.reset();
                 }
             } else if held_keys.contains(&&VirtualKeyCode::Down) {
                 if self.human.paddle.obj().bottom() < SCREEN_HEIGHT as isize {
-                    self.human.paddle = self.human.paddle.with_translation((0, 1));
-                    self.human.next_move = time_since_start + PADDLE_MOVE_RATE;
+                    self.human.paddle = self.human.paddle.with_translation((0, PADDLE_MOVE_DISTANCE));
+                    self.human.next_move.reset();
                 }
             }
         }
@@ -209,17 +209,17 @@ impl Game for Pong {
             }
             self.ball.next_move -= timing.fixed_time_step;
 
-            if self.cpu.next_move <= time_since_start {
+            if self.cpu.next_move.update(timing) {
                 if fastrand::bool() {
                     let cpu_center = self.cpu.paddle.obj().center();
                     if cpu_center.y < ball_center.y
                         && self.cpu.paddle.obj().bottom() < SCREEN_HEIGHT as isize
                     {
-                        self.cpu.paddle = self.cpu.paddle.with_translation((0, 1));
-                        self.cpu.next_move = time_since_start + PADDLE_MOVE_RATE;
+                        self.cpu.paddle = self.cpu.paddle.with_translation((0, PADDLE_MOVE_DISTANCE));
+                        self.cpu.next_move.reset();
                     } else if cpu_center.y > ball_center.y && self.cpu.paddle.obj().top() > 0 {
-                        self.cpu.paddle = self.cpu.paddle.with_translation((0, -1));
-                        self.cpu.next_move = time_since_start + PADDLE_MOVE_RATE;
+                        self.cpu.paddle = self.cpu.paddle.with_translation((0, -PADDLE_MOVE_DISTANCE));
+                        self.cpu.next_move.reset();
                     }
                 }
             }

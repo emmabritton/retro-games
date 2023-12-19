@@ -1,18 +1,11 @@
+use pixels_graphics_lib::buffer_graphics_lib::prelude::*;
+use pixels_graphics_lib::buffer_graphics_lib::prelude::Positioning::LeftTop;
+use pixels_graphics_lib::buffer_graphics_lib::prelude::TextPos::Px;
+use pixels_graphics_lib::graphics_shapes::triangle::FlatSide;
 use crate::GameName::{Invaders, Pong, Snake};
 use crate::GameUpdateResult::{Nothing, Pop, Push};
 use crate::{Game, GameUpdateResult, CLR_2, CLR_3};
-use pixels_graphics_lib::buffer_graphics_lib::drawable::{fill, Drawable};
-use pixels_graphics_lib::buffer_graphics_lib::shapes::collection::ShapeCollection;
-use pixels_graphics_lib::buffer_graphics_lib::shapes::CreateDrawable;
-use pixels_graphics_lib::buffer_graphics_lib::text::format::Positioning::LeftTop;
-use pixels_graphics_lib::buffer_graphics_lib::text::pos::TextPos;
-use pixels_graphics_lib::buffer_graphics_lib::text::pos::TextPos::Px;
-use pixels_graphics_lib::buffer_graphics_lib::text::TextSize::Large;
-use pixels_graphics_lib::buffer_graphics_lib::text::{large, Text};
-use pixels_graphics_lib::buffer_graphics_lib::Graphics;
-use pixels_graphics_lib::graphics_shapes::triangle::FlatSide;
 use pixels_graphics_lib::prelude::*;
-use winit::event::VirtualKeyCode;
 
 const TITLE: &str = "Games";
 const OPTIONS: [&str; 3] = ["Pong", "Snake", "Invaders"];
@@ -33,7 +26,7 @@ pub struct GameMenu {
 
 impl GameMenu {
     pub fn new() -> Self {
-        let title = Text::new(TITLE, TITLE_POS, (CLR_3, Large, LeftTop));
+        let title = Text::new(TITLE, TITLE_POS, (CLR_3, TextSize::Large, LeftTop));
         let cursor = Drawable::from_obj(
             Triangle::equilateral((CURSOR_X + 3, MENU_START_Y + 3), 6, FlatSide::Left),
             fill(CLR_3),
@@ -46,7 +39,7 @@ impl GameMenu {
                 Text::new(
                     text,
                     Px(MENU_X, MENU_START_Y + (i * MENU_STEP) as isize),
-                    (CLR_3, Large, LeftTop),
+                    (CLR_3, TextSize::Large, LeftTop),
                 )
             })
             .collect();
