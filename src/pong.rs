@@ -1,17 +1,13 @@
 use crate::pong::Direction::*;
-use crate::sound_effect::{NewSoundEffect, SoundEffect};
 use crate::GameUpdateResult::{Nothing, Pop};
 use crate::{Game, GameUpdateResult, CLR_2, CLR_3, SCREEN_HEIGHT, SCREEN_WIDTH, INPUT_DELAY};
-use audio_engine::AudioEngine;
 use pixels_graphics_lib::buffer_graphics_lib::prelude::*;
 use pixels_graphics_lib::buffer_graphics_lib::shapes::CreateDrawable;
 use pixels_graphics_lib::buffer_graphics_lib::text::format::Positioning::CenterTop;
 use pixels_graphics_lib::buffer_graphics_lib::text::pos::TextPos;
 use pixels_graphics_lib::buffer_graphics_lib::text::Text;
 use pixels_graphics_lib::buffer_graphics_lib::text::TextSize::Large;
-use pixels_graphics_lib::{Timer, Timing};
-use pixels_graphics_lib::prelude::KeyCode;
-use simple_game_utils::controller::GameController;
+use pixels_graphics_lib::prelude::*;
 
 const PADDLE_X_H: usize = 0;
 const PADDLE_X_C: usize = SCREEN_WIDTH - 6;

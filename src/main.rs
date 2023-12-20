@@ -2,7 +2,6 @@ mod invaders;
 mod menu;
 mod pong;
 mod snake;
-mod sound_effect;
 
 use crate::invaders::Invaders;
 use crate::menu::GameMenu;
@@ -23,7 +22,7 @@ use pixels_graphics_lib::buffer_graphics_lib::prelude::*;
 const SCREEN_WIDTH: usize = 160;
 const SCREEN_HEIGHT: usize = 144;
 
-const INPUT_DELAY: f64 = 0.1;
+const INPUT_DELAY: f64 = 0.2;
 
 const CLR_3: Color = GB_3;
 const CLR_2: Color = GB_2;

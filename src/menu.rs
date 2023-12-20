@@ -6,8 +6,6 @@ use pixels_graphics_lib::buffer_graphics_lib::prelude::TextPos::Px;
 use pixels_graphics_lib::buffer_graphics_lib::prelude::*;
 use pixels_graphics_lib::graphics_shapes::triangle::FlatSide;
 use pixels_graphics_lib::prelude::*;
-use pixels_graphics_lib::prelude::KeyCode::Digit0;
-use simple_game_utils::controller::GameController;
 
 const TITLE: &str = "Games";
 const OPTIONS: [&str; 3] = ["Pong", "Snake", "Invaders"];
@@ -84,14 +82,14 @@ impl Game for GameMenu {
         self.controller.update();
 
         if self.input_timer.update(timing) {
-            if (held_keys.contains(&&KeyCode::ArrowUp) || self.controller.direction.up) {
+            if held_keys.contains(&&KeyCode::ArrowUp) || self.controller.direction.up {
                 self.input_timer.reset();
                 if self.cursor_idx == 0 {
                     self.cursor_idx = self.options.len() - 1;
                 } else {
                     self.cursor_idx -= 1;
                 }
-            } else if (held_keys.contains(&&KeyCode::ArrowDown) || self.controller.direction.down) {
+            } else if held_keys.contains(&&KeyCode::ArrowDown) || self.controller.direction.down {
                 self.input_timer.reset();
                 if self.cursor_idx == self.options.len() - 1 {
                     self.cursor_idx = 0;

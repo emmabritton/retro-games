@@ -1,7 +1,5 @@
-use crate::sound_effect::{NewSoundEffect, SoundEffect};
 use crate::GameUpdateResult::{Nothing, Pop};
-use crate::{Game, GameUpdateResult, CLR_1, CLR_2, CLR_3, SCREEN_HEIGHT, SCREEN_WIDTH, INPUT_DELAY};
-use audio_engine::AudioEngine;
+use crate::{Game, GameUpdateResult, CLR_1, CLR_2, CLR_3, SCREEN_HEIGHT, SCREEN_WIDTH};
 use pixels_graphics_lib::buffer_graphics_lib::prelude::Positioning::{RightBottom, RightTop};
 use pixels_graphics_lib::buffer_graphics_lib::prelude::TextPos::Px;
 use pixels_graphics_lib::buffer_graphics_lib::prelude::WrappingStrategy::SpaceBeforeCol;
@@ -9,7 +7,6 @@ use pixels_graphics_lib::buffer_graphics_lib::prelude::*;
 use pixels_graphics_lib::graphics_shapes::coord;
 use pixels_graphics_lib::graphics_shapes::triangle::FlatSide;
 use pixels_graphics_lib::prelude::*;
-use simple_game_utils::controller::GameController;
 
 const CLR_SHIP: Color = CLR_3;
 const CLR_ATTACK: Color = CLR_3;
@@ -444,7 +441,7 @@ impl Game for Invaders {
             self.player.attacks.remove(i);
         }
         if self.player.attacks.is_empty() {
-            self.player.next_attack.remaining = 0.0;
+            self.player.next_attack.trigger()
         }
         if !self.ufo.is_visible && self.ufo.next_appearance < 0.0 {
             self.ufo.xy = Coord::from((SCREEN_WIDTH + 10, 10));
@@ -491,7 +488,6 @@ impl Game for Invaders {
         self.ufo.next_move -= timing.fixed_time_step;
         self.ufo.next_appearance -= timing.fixed_time_step;
         self.player.next_move -= timing.fixed_time_step;
-        self.player.next_attack -= timing.fixed_time_step;
 
         self.ufo.sprite.update(timing.fixed_time_step);
 

@@ -1,9 +1,7 @@
 use crate::snake::Direction::*;
 use crate::snake::State::*;
-use crate::sound_effect::{NewSoundEffect, SoundEffect};
 use crate::GameUpdateResult::{Nothing, Pop};
 use crate::{Game, GameUpdateResult, CLR_0, CLR_1, CLR_2, CLR_3, SCREEN_HEIGHT, SCREEN_WIDTH, INPUT_DELAY};
-use audio_engine::AudioEngine;
 use pixels_graphics_lib::buffer_graphics_lib::prelude::*;
 use pixels_graphics_lib::buffer_graphics_lib::shapes::CreateDrawable;
 use pixels_graphics_lib::buffer_graphics_lib::text::format::Positioning::{Center, LeftTop};
@@ -11,7 +9,6 @@ use pixels_graphics_lib::buffer_graphics_lib::text::pos::TextPos;
 use pixels_graphics_lib::buffer_graphics_lib::text::TextSize::Large;
 use pixels_graphics_lib::prelude::*;
 use std::ops::Neg;
-use simple_game_utils::controller::GameController;
 
 const TILE_SIZE: usize = 8;
 const ARENA_WIDTH: usize = 18;
@@ -228,7 +225,7 @@ impl Game for Snake {
     fn update(&mut self, timing: &Timing, held: &Vec<&KeyCode>) -> GameUpdateResult {
         self.controller.update();
 
-        if self.input_timer.update(timing) {
+        if self.input_timer.update(timing) && self.state == Playing {
             if held.contains(&&KeyCode::ArrowUp) || self.controller.direction.up {
                 let next = self.body[0] + Up.delta();
                 if self.body[1] != next {
@@ -253,9 +250,10 @@ impl Game for Snake {
                     self.input_timer.reset();
                     self.direction = Down;
                 }
-            } else if held.contains(&&KeyCode::Escape) || self.controller.action.east {
-                self.result = Pop;
             }
+        }
+        if held.contains(&&KeyCode::Escape) || self.controller.action.east {
+            self.result = Pop;
         }
 
         self.apple.update(timing);
@@ -297,7 +295,8 @@ impl Game for Snake {
                         self.score += SCORE_PER_FRUIT;
                         self.move_speed -= SPEED_CHANGE_PER_FRUIT;
                         if self.fruits.is_empty() {
-                            self.next_fruit_spawn.remaining = 0.2;
+                            self.next_fruit_spawn.trigger();
+                            self.next_fruit_spawn.delay(0.2);
                         }
                     } else {
                         self.body.remove(self.body.len() - 1);
