@@ -1,6 +1,6 @@
 use crate::sound_effect::{NewSoundEffect, SoundEffect};
 use crate::GameUpdateResult::{Nothing, Pop};
-use crate::{Game, GameUpdateResult, CLR_1, CLR_2, CLR_3, SCREEN_HEIGHT, SCREEN_WIDTH};
+use crate::{Game, GameUpdateResult, CLR_1, CLR_2, CLR_3, SCREEN_HEIGHT, SCREEN_WIDTH, INPUT_DELAY};
 use audio_engine::AudioEngine;
 use pixels_graphics_lib::buffer_graphics_lib::prelude::Positioning::{RightBottom, RightTop};
 use pixels_graphics_lib::buffer_graphics_lib::prelude::TextPos::Px;
@@ -9,6 +9,7 @@ use pixels_graphics_lib::buffer_graphics_lib::prelude::*;
 use pixels_graphics_lib::graphics_shapes::coord;
 use pixels_graphics_lib::graphics_shapes::triangle::FlatSide;
 use pixels_graphics_lib::prelude::*;
+use simple_game_utils::controller::GameController;
 
 const CLR_SHIP: Color = CLR_3;
 const CLR_ATTACK: Color = CLR_3;
@@ -24,11 +25,9 @@ const BASE_SPACE: isize = 40;
 const PLAYER_SPEED: f64 = 0.01;
 const PLAYER_ATTACK_SPEED: f64 = 0.006;
 const ALIEN_ATTACK_SPEED: f64 = 0.006;
-// const PLAYER_ATTACK_RATE: f64 = 1.5;
-const PLAYER_ATTACK_RATE: f64 = 0.1;
+const PLAYER_ATTACK_RATE: f64 = 1.0;
 const ALIEN_ATTACK_RATE: f64 = 0.1;
-// const MAX_PLAYER_ATTACKS: usize = 2;
-const MAX_PLAYER_ATTACKS: usize = 200;
+const MAX_PLAYER_ATTACKS: usize = 2;
 const MAX_ALIENS_ATTACKS: usize = 4;
 const UFO_SPEED: f64 = 0.07;
 const UFO_RATE: f64 = 20.0;
@@ -45,7 +44,7 @@ struct Player {
     ship: ShapeCollection,
     attacks: Vec<PlayerAttack>,
     next_move: f64,
-    next_attack: f64,
+    next_attack: Timer,
     attack: ShapeCollection,
     attack_sound: SoundEffect,
     death_sound: SoundEffect,
@@ -192,6 +191,7 @@ pub struct Invaders {
     result: GameUpdateResult,
     score: usize,
     audio_engine: AudioEngine,
+    controller: GameController
 }
 
 impl PlayerAttack {
@@ -279,7 +279,7 @@ impl Player {
             ship,
             attacks: vec![],
             next_move: 0.0,
-            next_attack: 0.0,
+            next_attack: Timer::new(PLAYER_ATTACK_RATE),
             attack,
         }
     }
@@ -328,6 +328,7 @@ impl Invaders {
             block,
             lives: 3,
             heart,
+            controller: GameController::new_unchecked()
         })
     }
 }
@@ -387,24 +388,13 @@ impl Game for Invaders {
         }
     }
 
-    fn on_key_press(&mut self, key: KeyCode) {
-        match key {
-            KeyCode::Escape => self.result = Pop,
-            KeyCode::Space => {
-                if self.player.attacks.len() < MAX_PLAYER_ATTACKS && self.player.next_attack < 0.0 {
-                    self.player
-                        .attacks
-                        .push(PlayerAttack::new(self.player.ship.center()));
-                    self.player.next_attack = PLAYER_ATTACK_RATE;
-                    self.player.attack_sound.play();
-                }
-            }
-            _ => {}
-        }
+    fn on_key_press(&mut self, _: KeyCode) {
+
     }
 
     #[allow(clippy::collapsible_if)] //for readability
     fn update(&mut self, timing: &Timing, held_keys: &Vec<&KeyCode>) -> GameUpdateResult {
+        self.controller.update();
         self.ufo.active_sound.update(timing);
         self.ufo.death_sound.update(timing);
         self.player.attack_sound.update(timing);
@@ -413,17 +403,30 @@ impl Game for Invaders {
         self.aliens.move_sounds[0].update(timing);
         self.aliens.move_sounds[1].update(timing);
         if self.player.next_move < 0.0 {
-            if held_keys.contains(&&KeyCode::ArrowLeft) {
+            if held_keys.contains(&&KeyCode::ArrowLeft) || self.controller.direction.left {
                 if self.player.ship.left() > 0 {
                     self.player.ship = self.player.ship.with_translation((-1, 0));
                     self.player.next_move = PLAYER_SPEED;
                 }
-            } else if held_keys.contains(&&KeyCode::ArrowRight) {
+            } else if held_keys.contains(&&KeyCode::ArrowRight) || self.controller.direction.right  {
                 if self.player.ship.right() < SCREEN_WIDTH as isize {
                     self.player.ship = self.player.ship.with_translation((1, 0));
                     self.player.next_move = PLAYER_SPEED;
                 }
             }
+        }
+
+        if held_keys.contains(&&KeyCode::Space) || self.controller.action.south {
+            if self.player.attacks.len() < MAX_PLAYER_ATTACKS {
+                if self.player.next_attack.update(timing) {
+                    self.player
+                        .attacks
+                        .push(PlayerAttack::new(self.player.ship.center()));
+                    self.player.attack_sound.play();
+                }
+            }
+        } else if held_keys.contains(&&KeyCode::Escape) || self.controller.action.east {
+            self.result = Pop;
         }
 
         let mut remove = None;
@@ -441,7 +444,7 @@ impl Game for Invaders {
             self.player.attacks.remove(i);
         }
         if self.player.attacks.is_empty() {
-            self.player.next_attack = 0.0;
+            self.player.next_attack.remaining = 0.0;
         }
         if !self.ufo.is_visible && self.ufo.next_appearance < 0.0 {
             self.ufo.xy = Coord::from((SCREEN_WIDTH + 10, 10));

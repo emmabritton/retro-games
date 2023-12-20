@@ -50,7 +50,7 @@ jobs:
           components: clippy
 
       - name: Install linux libs
-        run: sudo apt-get update; sudo apt-get install --no-install-recommends pkg-config build-essential
+        run: sudo apt-get update; sudo apt-get install --no-install-recommends pkg-config build-essential libjack-jackd2-dev libjack-jackd2-0 libasound2-dev alsa
 
       - name: Run cargo clippy --all-targets -- -D clippy::all
         run: cargo clippy --all-targets -- -D clippy::all
@@ -70,7 +70,7 @@ jobs:
           override: true
 
       - name: Install linux libs
-        run: sudo apt-get update; sudo apt-get install --no-install-recommends pkg-config build-essential
+        run: sudo apt-get update; sudo apt-get install --no-install-recommends pkg-config build-essential libjack-jackd2-dev libjack-jackd2-0 libasound2-dev alsa
 
       - name: Run cargo check
         run: cargo test

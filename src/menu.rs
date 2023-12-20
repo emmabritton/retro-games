@@ -10,8 +10,7 @@ use pixels_graphics_lib::prelude::KeyCode::Digit0;
 use simple_game_utils::controller::GameController;
 
 const TITLE: &str = "Games";
-const OPTIONS: [&str; 2] = ["Pong", "Snake"];
-//, "Invaders"];
+const OPTIONS: [&str; 3] = ["Pong", "Snake", "Invaders"];
 const TITLE_POS: TextPos = Px(8, 8);
 const CURSOR_X: isize = 8;
 const MENU_X: isize = 20;
