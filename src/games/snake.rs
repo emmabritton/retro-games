@@ -1,7 +1,9 @@
 use crate::snake::Direction::*;
 use crate::snake::State::*;
 use crate::GameUpdateResult::{Nothing, Pop};
-use crate::{Game, GameUpdateResult, CLR_0, CLR_1, CLR_2, CLR_3, SCREEN_HEIGHT, SCREEN_WIDTH, INPUT_DELAY};
+use crate::{
+    Game, GameUpdateResult, CLR_0, CLR_1, CLR_2, CLR_3, INPUT_DELAY, SCREEN_HEIGHT, SCREEN_WIDTH,
+};
 use pixels_graphics_lib::buffer_graphics_lib::prelude::*;
 use pixels_graphics_lib::buffer_graphics_lib::shapes::CreateDrawable;
 use pixels_graphics_lib::buffer_graphics_lib::text::format::Positioning::{Center, LeftTop};
@@ -68,6 +70,7 @@ pub struct Snake {
     state: State,
     direction: Direction,
     next_dying_anim: Timer,
+    #[allow(unused)] //needed to play sound
     audio_engine: AudioEngine,
     apple: SoundEffect,
     death: SoundEffect,
@@ -134,8 +137,6 @@ impl Snake {
 }
 
 impl Game for Snake {
-    fn on_key_press(&mut self, _: KeyCode) {}
-
     fn render(&self, graphics: &mut Graphics) {
         graphics.update_translate(ARENA_START + (1, 0));
 
@@ -220,6 +221,8 @@ impl Game for Snake {
             }
         }
     }
+
+    fn on_key_press(&mut self, _: KeyCode) {}
 
     #[allow(clippy::collapsible_if)] //for readability
     fn update(&mut self, timing: &Timing, held: &Vec<&KeyCode>) -> GameUpdateResult {

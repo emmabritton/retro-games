@@ -1,6 +1,6 @@
 use crate::pong::Direction::*;
 use crate::GameUpdateResult::{Nothing, Pop};
-use crate::{Game, GameUpdateResult, CLR_2, CLR_3, SCREEN_HEIGHT, SCREEN_WIDTH, INPUT_DELAY};
+use crate::{Game, GameUpdateResult, CLR_2, CLR_3, SCREEN_HEIGHT, SCREEN_WIDTH};
 use pixels_graphics_lib::buffer_graphics_lib::prelude::*;
 use pixels_graphics_lib::buffer_graphics_lib::shapes::CreateDrawable;
 use pixels_graphics_lib::buffer_graphics_lib::text::format::Positioning::CenterTop;
@@ -67,11 +67,11 @@ pub struct Pong {
     separator: Drawable<Rect>,
     serving: bool,
     result: GameUpdateResult,
+    #[allow(unused)] //needed to play sound
     audio_engine: AudioEngine,
     paddle: SoundEffect,
     miss: SoundEffect,
     wall: SoundEffect,
-    input_timer: Timer,
     controller: GameController,
 }
 
@@ -107,7 +107,6 @@ impl Pong {
             wall,
             audio_engine,
             controller: GameController::new_unchecked(),
-            input_timer: Timer::new(INPUT_DELAY),
         })
     }
 }
@@ -143,9 +142,7 @@ impl Game for Pong {
         self.ball.shape.render(graphics);
     }
 
-    fn on_key_press(&mut self, _: KeyCode) {
-
-    }
+    fn on_key_press(&mut self, _: KeyCode) {}
 
     #[allow(clippy::collapsible_if)] //for readability
     fn update(&mut self, timing: &Timing, held_keys: &Vec<&KeyCode>) -> GameUpdateResult {
@@ -154,11 +151,11 @@ impl Game for Pong {
         self.paddle.update(timing);
         self.miss.update(timing);
 
-        if self.serving && (held_keys.contains(&& KeyCode::Space) || self.controller.action.south){
+        if self.serving && (held_keys.contains(&&KeyCode::Space) || self.controller.action.south) {
             self.serving = false
         }
 
-        if held_keys.contains(&& KeyCode::Escape ) || self.controller.action.east{
+        if held_keys.contains(&&KeyCode::Escape) || self.controller.action.east {
             self.result = Pop;
         }
 

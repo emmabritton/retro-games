@@ -23,7 +23,7 @@ pub struct GameMenu {
     frame: ShapeCollection,
     result: GameUpdateResult,
     controller: GameController,
-    input_timer: Timer
+    input_timer: Timer,
 }
 
 impl GameMenu {
@@ -54,7 +54,7 @@ impl GameMenu {
             options,
             result: Nothing,
             controller: GameController::new_unchecked(),
-            input_timer: Timer::new(INPUT_DELAY)
+            input_timer: Timer::new(INPUT_DELAY),
         }
     }
 }
@@ -70,9 +70,7 @@ impl Game for GameMenu {
         }
     }
 
-    fn on_key_press(&mut self, _: KeyCode) {
-
-    }
+    fn on_key_press(&mut self, _: KeyCode) {}
 
     fn update(&mut self, timing: &Timing, held_keys: &Vec<&KeyCode>) -> GameUpdateResult {
         self.cursor = self.cursor.with_move((
@@ -96,7 +94,7 @@ impl Game for GameMenu {
                 } else {
                     self.cursor_idx += 1;
                 }
-            } else if held_keys.contains(&&KeyCode::Enter) || self.controller.action.south {
+            } else if held_keys.contains(&&KeyCode::Space) || self.controller.action.south {
                 self.input_timer.reset();
                 match self.cursor_idx {
                     0 => self.result = Push(Pong),
@@ -113,6 +111,7 @@ impl Game for GameMenu {
     }
 
     fn resuming(&mut self) {
+        self.input_timer.reset();
         self.result = Nothing;
     }
 }

@@ -16,26 +16,28 @@ const PLAYER_Y: usize = 133;
 const SCORE_XY: TextPos = Px(160, 1);
 const HEART_XY: Coord = Coord::new(1, 1);
 const HEART_SPACE: isize = 11;
-const ALIEN_START: Coord = Coord::new(1, 20);
+const ALIEN_START: Coord = Coord::new(3, 18);
 const BASE_START: Coord = Coord::new(10, 100);
 const BASE_SPACE: isize = 40;
 const PLAYER_SPEED: f64 = 0.01;
 const PLAYER_ATTACK_SPEED: f64 = 0.006;
-const ALIEN_ATTACK_SPEED: f64 = 0.006;
+const ALIEN_ATTACK_SPEED: f64 = 0.1;
 const PLAYER_ATTACK_RATE: f64 = 1.0;
-const ALIEN_ATTACK_RATE: f64 = 0.1;
+const ALIEN_ATTACK_RATE: f64 = 5.0;
 const MAX_PLAYER_ATTACKS: usize = 2;
 const MAX_ALIENS_ATTACKS: usize = 4;
 const UFO_SPEED: f64 = 0.07;
 const UFO_RATE: f64 = 20.0;
 const SCORE_UFO: usize = 1000;
 const SCORE_INVADER: usize = 50;
-const INVADER_SPEED_START: f64 = 1.0;
+const ALIEN_SPEED_START: f64 = 1.0;
 const INVADER_SPEED_MIN: f64 = 0.1;
 const SPEED_DELTA_PER_INVADER: f64 = 0.04;
 const SPEED_DELTA_PER_LEVEL: f64 = 0.1;
 const ALIEN_SIZE: (usize, usize) = (11, 8);
 const ALIEN_SPACING: (usize, usize) = (4, 4);
+const ALIEN_ROW_SIZE: usize = 9;
+const UFO_START: Coord = Coord::new(-50, 50);
 
 struct Player {
     ship: ShapeCollection,
@@ -57,22 +59,30 @@ struct EnemyAttack {
     next_move: f64,
 }
 
+impl EnemyAttack {
+    pub fn bounds(&self) -> Rect {
+        Rect::new_with_size(self.xy, 5, 8)
+    }
+}
+
 struct Base {
     offset: Coord,
     blocks: Vec<Vec<bool>>,
 }
 
 struct Aliens {
-    ships: Vec<IndexedImage>,
+    ships: Vec<AnimatedIndexedImage>,
     alive: Vec<Vec<bool>>,
     offset: Coord,
-    pub bounds: Rect,
     last_move: f64,
     dir: isize,
     move_rate: f64,
     death_sound: SoundEffect,
     move_sounds: [SoundEffect; 2],
     next_move_sound: usize,
+    attacks: Vec<EnemyAttack>,
+    next_attack: f64,
+    attack: AnimatedIndexedImage
 }
 
 impl Aliens {
@@ -80,9 +90,9 @@ impl Aliens {
     fn coord_for_ship(&self, y: usize, x: usize) -> Coord {
         self.offset
             + (
-                x * (ALIEN_SPACING.0 + ALIEN_SIZE.0),
-                y * (ALIEN_SPACING.1 + ALIEN_SIZE.1),
-            )
+            x * (ALIEN_SPACING.0 + ALIEN_SIZE.0),
+            y * (ALIEN_SPACING.1 + ALIEN_SIZE.1),
+        )
     }
 
     #[inline]
@@ -90,9 +100,9 @@ impl Aliens {
         Rect::new_with_size(
             self.offset
                 + (
-                    x * (ALIEN_SPACING.0 + ALIEN_SIZE.0),
-                    y * (ALIEN_SPACING.1 + ALIEN_SIZE.1),
-                ),
+                x * (ALIEN_SPACING.0 + ALIEN_SIZE.0),
+                y * (ALIEN_SPACING.1 + ALIEN_SIZE.1),
+            ),
             ALIEN_SIZE.0,
             ALIEN_SIZE.1,
         )
@@ -105,40 +115,23 @@ impl Aliens {
             .sum()
     }
 
-    fn update_bounds(&mut self) {
-        let mut tmp = None;
-        for (y, row) in self.alive.iter().enumerate() {
-            for (x, alive) in row.iter().enumerate() {
-                if *alive {
-                    match tmp {
-                        None => tmp = Some(self.rect_for_ship(y, x)),
-                        Some(t) => {
-                            let r = self.rect_for_ship(y, x);
-                            tmp = Some(Rect::new(
-                                (r.left().min(t.left()), r.top().min(t.top())),
-                                (r.right().max(t.right()), r.bottom().max(t.bottom())),
-                            ))
-                        }
-                    }
-                }
-            }
-        }
-        if let Some(r) = tmp {
-            self.bounds = r;
-        }
-    }
-
     fn update(&mut self, timing: &Timing) {
         if self.last_move < 0.0 {
-            self.bounds = self.bounds.translate_by(coord!(self.dir, 0));
-            self.offset = self.bounds.top_left();
-            if self.bounds.left() <= 0 {
-                self.dir = 1;
-                self.bounds = self.bounds.translate_by(coord!(0, 1));
+            let min = self.left_most_x();
+            let max = self.right_most_x();
+            if min.is_none() || max.is_none() {
+                return;
             }
-            if self.bounds.right() >= SCREEN_WIDTH as isize {
+            let min = min.unwrap();
+            let max = max.unwrap();
+            self.offset = self.offset + (self.dir, 0);
+            if min <= 0 {
+                self.dir = 1;
+                self.offset = self.offset + (0, 1);
+            }
+            if max >= SCREEN_WIDTH as isize {
                 self.dir = -1;
-                self.bounds = self.bounds.translate_by(coord!(0, 1));
+                self.offset = self.offset + (0, 1);
             }
             self.last_move = self.move_rate;
             if self.move_sounds[self.next_move_sound].can_play() {
@@ -149,17 +142,97 @@ impl Aliens {
         self.last_move -= timing.fixed_time_step;
     }
 
-    fn player_attack(&mut self, xy: Coord) -> bool {
-        if self.bounds.contains(xy) {
-            for (y, row) in self.alive.iter().enumerate() {
-                for (x, alive) in row.iter().enumerate() {
-                    if *alive && self.rect_for_ship(y, x).contains(xy) {
-                        self.alive[y][x] = false;
-                        self.move_rate =
-                            self.move_rate.min(self.move_rate - SPEED_DELTA_PER_INVADER);
-                        self.update_bounds();
-                        return true;
-                    }
+    fn random_attack_position(&self) -> Option<Coord> {
+        let mut positions: Vec<Coord> =self.alive
+            .iter()
+            .enumerate()
+            .map(|(y, row)|
+                row.iter()
+                    .enumerate()
+                    .filter_map(move |(x, alive)| {
+                        if *alive {
+                            Some(self.coord_for_ship(y,x) + (ALIEN_SIZE.0 /2, ALIEN_SIZE.1))
+                        } else {
+                            None
+                        }
+                    })
+                )
+                .flatten()
+            .collect();
+        if positions.is_empty() {
+            return None;
+        }
+        let i = fastrand::usize(0..positions.len());
+        Some(positions.remove(i))
+    }
+
+    fn left_most_x(&self) -> Option<isize> {
+        self.alive
+            .iter()
+            .enumerate()
+            .filter_map(|(y, row)| {
+                row.iter()
+                    .enumerate()
+                    .filter_map(|(x, alive)| {
+                        if *alive {
+                            Some(self.coord_for_ship(y, x).x)
+                        } else {
+                            None
+                        }
+                    })
+                    .min()
+            })
+            .min()
+            .map(|x| x - 2)
+    }
+
+    fn right_most_x(&self) -> Option<isize> {
+        self.alive
+            .iter()
+            .enumerate()
+            .filter_map(|(y, row)| {
+                row.iter()
+                    .enumerate()
+                    .filter_map(|(x, alive)| {
+                        if *alive {
+                            Some(self.coord_for_ship(y, x).x)
+                        } else {
+                            None
+                        }
+                    })
+                    .max()
+            })
+            .max()
+            .map(|x| x + ALIEN_SIZE.0 as isize + 2)
+    }
+
+    fn bottom_most_y(&self) -> Option<isize> {
+        self.alive
+            .iter()
+            .enumerate()
+            .filter_map(|(y, row)| {
+                row.iter()
+                    .enumerate()
+                    .filter_map(|(x, alive)| {
+                        if *alive {
+                            Some(self.coord_for_ship(y, x).y)
+                        } else {
+                            None
+                        }
+                    })
+                    .max()
+            })
+            .max()
+            .map(|y| y + ALIEN_SIZE.1 as isize)
+    }
+
+    fn detect_player_attack_hit(&mut self, xy: Coord) -> bool {
+        for (y, row) in self.alive.iter().enumerate() {
+            for (x, alive) in row.iter().enumerate() {
+                if *alive && self.rect_for_ship(y, x).contains(xy) {
+                    self.alive[y][x] = false;
+                    self.move_rate = self.move_rate.min(self.move_rate - SPEED_DELTA_PER_INVADER);
+                    return true;
                 }
             }
         }
@@ -187,8 +260,9 @@ pub struct Invaders {
     heart: IndexedImage,
     result: GameUpdateResult,
     score: usize,
+    #[allow(unused)] //needed to play sound
     audio_engine: AudioEngine,
-    controller: GameController
+    controller: GameController,
 }
 
 impl PlayerAttack {
@@ -212,30 +286,33 @@ impl Aliens {
         move_sound2: SoundEffect,
     ) -> Self {
         let ships = vec![
-            IndexedImage::from_file_contents(include_bytes!("../assets/invader1.ici"))
+            AnimatedIndexedImage::from_file_contents(include_bytes!("../assets/invader1.ica"))
                 .unwrap()
                 .0,
-            IndexedImage::from_file_contents(include_bytes!("../assets/invader2.ici"))
+            AnimatedIndexedImage::from_file_contents(include_bytes!("../assets/invader2.ica"))
                 .unwrap()
                 .0,
-            IndexedImage::from_file_contents(include_bytes!("../assets/invader3.ici"))
+            AnimatedIndexedImage::from_file_contents(include_bytes!("../assets/invader3.ica"))
                 .unwrap()
-                .0
+                .0,
         ];
-        let mut aliens = Self {
+        let attack = AnimatedIndexedImage::from_file_contents(include_bytes!("../assets/alien_attack.ica"))
+            .unwrap()
+            .0;
+        Self {
             death_sound,
             move_sounds: [move_sound1, move_sound2],
             ships,
-            alive: vec![vec![true; 9]; 5],
+            alive: vec![vec![true; ALIEN_ROW_SIZE]; 5],
             offset: ALIEN_START,
-            bounds: Rect::new((0, 0), (0, 0)),
             dir: 1,
             last_move: 0.0,
-            move_rate: INVADER_SPEED_START,
+            move_rate: ALIEN_SPEED_START,
             next_move_sound: 0,
-        };
-        aliens.update_bounds();
-        aliens
+            attacks: vec![],
+            next_attack: ALIEN_ATTACK_RATE * 2.0,
+            attack
+        }
     }
 }
 
@@ -250,7 +327,7 @@ impl Ufo {
             sprite,
             active_sound: sound,
             death_sound,
-            xy: Coord::new(-50, 50),
+            xy: UFO_START,
             next_move: 0.0,
             next_appearance: UFO_RATE,
             is_visible: false,
@@ -279,6 +356,10 @@ impl Player {
             next_attack: Timer::new(PLAYER_ATTACK_RATE),
             attack,
         }
+    }
+
+    pub fn bounds(&self) -> Rect {
+        Rect::new((self.ship.left(), self.ship.top()), (self.ship.right(), self.ship.bottom()))
     }
 }
 
@@ -325,8 +406,42 @@ impl Invaders {
             block,
             lives: 3,
             heart,
-            controller: GameController::new_unchecked()
+            controller: GameController::new_unchecked(),
         })
+    }
+
+    fn player_killed(&mut self) {
+        self.aliens.alive.fill(vec![true; ALIEN_ROW_SIZE]);
+        self.aliens.attacks.clear();
+        self.aliens.offset = ALIEN_START;
+        self.aliens.move_rate = ALIEN_SPEED_START;
+        self.aliens.next_attack = ALIEN_ATTACK_RATE;
+        self.player.attacks.clear();
+        self.ufo.xy = UFO_START;
+        self.ufo.next_appearance = UFO_RATE;
+        self.ufo.is_visible = false;
+        self.ufo.active_sound.reset();
+    }
+
+    fn detect_alien_attack_hit(&mut self, timing: &Timing) -> bool {
+        let mut remove = vec![];
+        for (i,attack) in self.aliens.attacks.iter_mut().enumerate() {
+            attack.next_move -= timing.fixed_time_step;
+            if attack.next_move <= 0.0 {
+                attack.xy = attack.xy + (0, 1);
+                attack.next_move = ALIEN_ATTACK_SPEED;
+            }
+            if attack.xy.y >= SCREEN_HEIGHT as isize {
+                remove.push(i);
+            }
+            if attack.bounds().intersects_rect(&self.player.bounds()) {
+                return true;
+            }
+        }
+        for i in remove {
+            self.aliens.attacks.remove(i);
+        }
+        false
     }
 }
 
@@ -349,6 +464,10 @@ impl Game for Invaders {
             graphics.draw(&self.player.attack.with_move(attack.xy));
         }
 
+        for attack in &self.aliens.attacks {
+            graphics.draw_animated_image(attack.xy, &self.aliens.attack);
+        }
+
         graphics.draw(&self.player.ship);
         if self.ufo.is_visible {
             graphics.draw_animated_image(self.ufo.xy, &self.ufo.sprite);
@@ -359,35 +478,29 @@ impl Game for Invaders {
                 if *ship_alive {
                     let xy = self.aliens.coord_for_ship(y, x);
                     match y {
-                        0 => graphics.draw_indexed_image(xy, &self.aliens.ships[0]),
-                        1..=2 => graphics.draw_indexed_image(xy, &self.aliens.ships[1]),
-                        3..=4 => graphics.draw_indexed_image(xy, &self.aliens.ships[2]),
+                        0 => graphics.draw_animated_image(xy, &self.aliens.ships[0]),
+                        1..=2 => graphics.draw_animated_image(xy, &self.aliens.ships[1]),
+                        3..=4 => graphics.draw_animated_image(xy, &self.aliens.ships[2]),
                         _ => {}
                     }
                 }
             }
         }
-        graphics.draw_rect(self.aliens.bounds.clone(), stroke(BLUE));
 
         if cfg!(debug_assertions) {
             graphics.draw_text(
                 &format!(
-                    "{:.5} {:.5} {:?} {:.5} {}",
-                    self.aliens.move_rate,
-                    self.ufo.next_appearance,
-                    self.ufo.xy,
-                    self.ufo.next_move,
-                    &self.aliens.alive_count()
+                    "{:.2} {}",
+                    self.aliens.next_attack,
+                    self.aliens.attacks.len(),
                 ),
-                TextPos::Px(SCREEN_WIDTH as isize, SCREEN_HEIGHT as isize),
+                Px(SCREEN_WIDTH as isize, SCREEN_HEIGHT as isize),
                 (CLR_1, TextSize::Small, SpaceBeforeCol(8), RightBottom),
             );
         }
     }
 
-    fn on_key_press(&mut self, _: KeyCode) {
-
-    }
+    fn on_key_press(&mut self, _: KeyCode) {}
 
     #[allow(clippy::collapsible_if)] //for readability
     fn update(&mut self, timing: &Timing, held_keys: &Vec<&KeyCode>) -> GameUpdateResult {
@@ -405,7 +518,7 @@ impl Game for Invaders {
                     self.player.ship = self.player.ship.with_translation((-1, 0));
                     self.player.next_move = PLAYER_SPEED;
                 }
-            } else if held_keys.contains(&&KeyCode::ArrowRight) || self.controller.direction.right  {
+            } else if held_keys.contains(&&KeyCode::ArrowRight) || self.controller.direction.right {
                 if self.player.ship.right() < SCREEN_WIDTH as isize {
                     self.player.ship = self.player.ship.with_translation((1, 0));
                     self.player.next_move = PLAYER_SPEED;
@@ -460,6 +573,33 @@ impl Game for Invaders {
         }
         self.aliens.update(timing);
 
+        for image in &mut self.aliens.ships {
+            image.update(timing.fixed_time_step);
+        }
+
+        if self.detect_alien_attack_hit(timing) {
+            self.player_killed();
+        }
+
+        if let Some(y) = self.aliens.bottom_most_y() {
+            if y >= (SCREEN_HEIGHT as isize - 10) {
+                self.player_killed();
+            }
+        }
+
+        if self.aliens.next_attack <= 0.9 && self.aliens.attacks.len() < MAX_ALIENS_ATTACKS {
+            if let Some(pos) = self.aliens.random_attack_position() {
+                self.aliens.attacks.push(EnemyAttack {
+                    xy: pos,
+                    next_move: 0.0,
+                });
+            }
+            self.aliens.next_attack = ALIEN_ATTACK_RATE;
+        }
+        self.aliens.next_attack -= timing.fixed_time_step;
+
+        self.aliens.attack.update(timing.fixed_time_step);
+
         let mut to_delete = vec![];
         for (i, attack) in self.player.attacks.iter().enumerate() {
             if Rect::new_with_size(
@@ -467,7 +607,7 @@ impl Game for Invaders {
                 self.ufo.sprite.width() as usize,
                 self.ufo.sprite.height() as usize,
             )
-            .contains(attack.xy)
+                .contains(attack.xy)
             {
                 to_delete.push(i);
                 self.score += SCORE_UFO;
@@ -475,7 +615,7 @@ impl Game for Invaders {
                 self.ufo.is_visible = false;
                 self.ufo.next_appearance = UFO_RATE * 2.0;
                 self.ufo.active_sound.reset();
-            } else if self.aliens.player_attack(attack.xy) {
+            } else if self.aliens.detect_player_attack_hit(attack.xy) {
                 to_delete.push(i);
                 self.aliens.death_sound.play();
                 self.score += SCORE_INVADER;
