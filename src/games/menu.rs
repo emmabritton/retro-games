@@ -1,19 +1,20 @@
-use crate::GameName::{Invaders, Pong, Snake};
+use crate::button_bar::{ButtonBar, ButtonDef, BAR_HEIGHT};
+use crate::GameName::{Pong, Snake};
 use crate::GameUpdateResult::{Nothing, Pop, Push};
-use crate::{Game, GameUpdateResult, CLR_2, CLR_3, INPUT_DELAY};
+use crate::{Game, GameUpdateResult, CLR_2, CLR_3, INPUT_DELAY, SCREEN_HEIGHT, SCREEN_WIDTH};
 use pixels_graphics_lib::buffer_graphics_lib::prelude::Positioning::LeftTop;
 use pixels_graphics_lib::buffer_graphics_lib::prelude::TextPos::Px;
-use pixels_graphics_lib::buffer_graphics_lib::prelude::*;
-use pixels_graphics_lib::graphics_shapes::triangle::FlatSide;
+use pixels_graphics_lib::prelude::font::standard_8x10;
+use pixels_graphics_lib::prelude::PixelFont::Standard8x10;
 use pixels_graphics_lib::prelude::*;
 
-const TITLE: &str = "Games";
-const OPTIONS: [&str; 3] = ["Pong", "Snake", "Invaders"];
+const TITLE: &str = "GAMES";
+const OPTIONS: [&str; 2] = ["PONG", "SNAKE"];
 const TITLE_POS: TextPos = Px(8, 8);
 const CURSOR_X: isize = 8;
 const MENU_X: isize = 20;
 const MENU_START_Y: isize = 30;
-const MENU_STEP: usize = large::CHAR_HEIGHT + 4;
+const MENU_STEP: usize = standard_8x10::CHAR_HEIGHT + 4;
 
 pub struct GameMenu {
     title: Text,
@@ -22,18 +23,18 @@ pub struct GameMenu {
     options: Vec<Text>,
     frame: ShapeCollection,
     result: GameUpdateResult,
-    controller: GameController,
-    input_timer: Timer
+    input_timer: Timer,
+    button_bar: ButtonBar,
 }
 
 impl GameMenu {
     pub fn new() -> Self {
-        let title = Text::new(TITLE, TITLE_POS, (CLR_3, TextSize::Large, LeftTop));
+        let title = Text::new(TITLE, TITLE_POS, (CLR_3, Standard8x10, LeftTop));
         let cursor = Drawable::from_obj(
             Triangle::equilateral((CURSOR_X + 3, MENU_START_Y + 3), 6, FlatSide::Left),
             fill(CLR_3),
         );
-        let frame = ShapeCollection::new();
+        let frame = ShapeCollection::default();
         let options = OPTIONS
             .iter()
             .enumerate()
@@ -41,7 +42,7 @@ impl GameMenu {
                 Text::new(
                     text,
                     Px(MENU_X, MENU_START_Y + (i * MENU_STEP) as isize),
-                    (CLR_3, TextSize::Large, LeftTop),
+                    (CLR_3, Standard8x10, LeftTop),
                 )
             })
             .collect();
@@ -53,14 +54,22 @@ impl GameMenu {
             frame,
             options,
             result: Nothing,
-            controller: GameController::new_unchecked(),
-            input_timer: Timer::new(INPUT_DELAY)
+            input_timer: Timer::new(INPUT_DELAY),
+            button_bar: ButtonBar::new(
+                coord!(0, SCREEN_HEIGHT - BAR_HEIGHT),
+                SCREEN_WIDTH,
+                &[
+                    ("EXIT", ButtonDef::Escape),
+                    ("CURSOR", ButtonDef::Vert),
+                    ("PLAY", ButtonDef::Space),
+                ],
+            ),
         }
     }
 }
 
 impl Game for GameMenu {
-    fn render(&self, graphics: &mut Graphics) {
+    fn render(&self, graphics: &mut Graphics, controller: Option<Controller>) {
         graphics.draw(&self.frame);
         graphics.draw(&self.title);
         graphics.draw(&self.cursor);
@@ -68,43 +77,46 @@ impl Game for GameMenu {
             let color = if self.cursor_idx == i { CLR_3 } else { CLR_2 };
             graphics.draw(&option.with_color(color));
         }
+        self.button_bar.render(graphics, controller);
     }
 
-    fn on_key_press(&mut self, _: KeyCode) {
+    fn on_key_press(&mut self, _: KeyCode) {}
 
-    }
-
-    fn update(&mut self, timing: &Timing, held_keys: &Vec<&KeyCode>) -> GameUpdateResult {
+    fn update(
+        &mut self,
+        timing: &Timing,
+        held_keys: &Vec<&KeyCode>,
+        controller: &GameController,
+    ) -> GameUpdateResult {
         self.cursor = self.cursor.with_move((
             CURSOR_X,
             MENU_START_Y + 1 + (self.cursor_idx * MENU_STEP) as isize,
         ));
-        self.controller.update();
 
         if self.input_timer.update(timing) {
-            if held_keys.contains(&&KeyCode::ArrowUp) || self.controller.direction.up {
+            if held_keys.contains(&&KeyCode::ArrowUp) || controller.direction.up {
                 self.input_timer.reset();
                 if self.cursor_idx == 0 {
                     self.cursor_idx = self.options.len() - 1;
                 } else {
                     self.cursor_idx -= 1;
                 }
-            } else if held_keys.contains(&&KeyCode::ArrowDown) || self.controller.direction.down {
+            } else if held_keys.contains(&&KeyCode::ArrowDown) || controller.direction.down {
                 self.input_timer.reset();
                 if self.cursor_idx == self.options.len() - 1 {
                     self.cursor_idx = 0;
                 } else {
                     self.cursor_idx += 1;
                 }
-            } else if held_keys.contains(&&KeyCode::Enter) || self.controller.action.south {
+            } else if held_keys.contains(&&KeyCode::Space) || controller.action.south {
                 self.input_timer.reset();
                 match self.cursor_idx {
                     0 => self.result = Push(Pong),
                     1 => self.result = Push(Snake),
-                    2 => self.result = Push(Invaders),
+                    // 2 => self.result = Push(Invaders),
                     _ => {}
                 }
-            } else if held_keys.contains(&&KeyCode::Escape) || self.controller.action.east {
+            } else if held_keys.contains(&&KeyCode::Escape) || controller.action.east {
                 self.result = Pop
             }
         }
@@ -113,6 +125,7 @@ impl Game for GameMenu {
     }
 
     fn resuming(&mut self) {
+        self.input_timer.reset();
         self.result = Nothing;
     }
 }

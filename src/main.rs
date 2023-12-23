@@ -1,26 +1,23 @@
-mod invaders;
-mod menu;
-mod pong;
-mod snake;
+#![windows_subsystem = "windows"]
 
-use crate::invaders::Invaders;
-use crate::menu::GameMenu;
-use crate::pong::Pong;
-use crate::snake::Snake;
+mod button_bar;
+mod games;
+
+use crate::games::menu::GameMenu;
+use crate::games::pong::Pong;
+use crate::games::snake::Snake;
 use color_eyre::Result;
 use log::LevelFilter;
-use pixels_graphics_lib::buffer_graphics_lib::color::Color;
+use pixels_graphics_lib::buffer_graphics_lib::prelude::*;
 use pixels_graphics_lib::buffer_graphics_lib::text::format::Positioning::LeftBottom;
 use pixels_graphics_lib::buffer_graphics_lib::text::pos::TextPos;
-use pixels_graphics_lib::buffer_graphics_lib::text::TextSize::Small;
 use pixels_graphics_lib::buffer_graphics_lib::Graphics;
-use pixels_graphics_lib::prefs::WindowPreferences;
+use pixels_graphics_lib::prelude::PixelFont::Standard4x5;
 use pixels_graphics_lib::prelude::*;
 use std::collections::HashSet;
-use pixels_graphics_lib::buffer_graphics_lib::prelude::*;
 
 const SCREEN_WIDTH: usize = 160;
-const SCREEN_HEIGHT: usize = 144;
+const SCREEN_HEIGHT: usize = 166;
 
 const INPUT_DELAY: f64 = 0.2;
 
@@ -41,9 +38,9 @@ fn main() -> Result<()> {
 
     let system = Box::new(GameHost::new());
     run(
-        160,
-        144,
-        "Games",
+        SCREEN_WIDTH,
+        SCREEN_HEIGHT,
+        "Retro Games",
         system,
         Options {
             ups: 60,
@@ -57,6 +54,8 @@ fn main() -> Result<()> {
 struct GameHost {
     game_stack: Vec<Box<dyn Game>>,
     held_keys: HashSet<KeyCode>,
+    controller: GameController,
+    keyboard: bool,
 }
 
 impl GameHost {
@@ -64,6 +63,8 @@ impl GameHost {
         Self {
             game_stack: vec![Box::new(GameMenu::new())],
             held_keys: HashSet::new(),
+            controller: GameController::new_unchecked(),
+            keyboard: false,
         }
     }
 }
@@ -77,24 +78,24 @@ impl System for GameHost {
             KeyCode::ArrowRight,
             KeyCode::Escape,
             KeyCode::Space,
-            KeyCode::Enter,
-            KeyCode::ControlRight,
-            KeyCode::ControlLeft,
         ]
     }
 
     fn window_prefs(&mut self) -> Option<WindowPreferences> {
-        Some(WindowPreferences::new("app", "emmabritton", "retro_games").unwrap())
+        Some(WindowPreferences::new("app", "emmabritton", "retro_games", 3).unwrap())
     }
 
-    fn update(&mut self, timing: &Timing) {
+    fn update(&mut self, timing: &Timing, _: &Window) {
+        self.controller.update();
+        if self.controller.mask() != 0 {
+            self.keyboard = false;
+        }
         if let Some(game) = self.game_stack.last_mut() {
-            match game.update(timing, &self.held_keys.iter().collect()) {
+            match game.update(timing, &self.held_keys.iter().collect(), &self.controller) {
                 GameUpdateResult::Nothing => {}
                 GameUpdateResult::Push(new_game) => match new_game {
                     GameName::Pong => self.game_stack.push(Pong::new()),
                     GameName::Snake => self.game_stack.push(Snake::new()),
-                    GameName::Invaders => self.game_stack.push(Invaders::new()),
                 },
                 GameUpdateResult::Pop => {
                     self.game_stack.remove(self.game_stack.len() - 1);
@@ -109,24 +110,24 @@ impl System for GameHost {
     fn render(&mut self, graphics: &mut Graphics) {
         graphics.clear(CLR_0);
         if let Some(game) = self.game_stack.last() {
-            game.render(graphics);
+            let controller = if self.keyboard {
+                None
+            } else {
+                self.controller.get_controller_type()
+            };
+            game.render(graphics, controller);
         }
         if cfg!(debug_assertions) {
-            let txt = self
-                .held_keys
-                .iter()
-                .map(|k| format!("{k:?}"))
-                .collect::<Vec<String>>()
-                .join(", ");
             graphics.draw_text(
-                &txt,
+                "",
                 TextPos::Px(0, SCREEN_HEIGHT as isize),
-                (CLR_1, Small, LeftBottom),
+                (CLR_1, Standard4x5, LeftBottom),
             );
         }
     }
 
     fn on_key_down(&mut self, keys: Vec<KeyCode>) {
+        self.keyboard = true;
         for key in keys {
             self.held_keys.insert(key);
         }
@@ -149,10 +150,15 @@ impl System for GameHost {
 }
 
 trait Game {
-    fn render(&self, graphics: &mut Graphics);
+    fn render(&self, graphics: &mut Graphics, controller: Option<Controller>);
     fn on_key_press(&mut self, key: KeyCode);
     #[allow(clippy::ptr_arg)] //breaks other code if changed
-    fn update(&mut self, timing: &Timing, held_keys: &Vec<&KeyCode>) -> GameUpdateResult;
+    fn update(
+        &mut self,
+        timing: &Timing,
+        held_keys: &Vec<&KeyCode>,
+        controller: &GameController,
+    ) -> GameUpdateResult;
     fn resuming(&mut self);
 }
 
@@ -160,7 +166,6 @@ trait Game {
 enum GameName {
     Pong,
     Snake,
-    Invaders,
 }
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
