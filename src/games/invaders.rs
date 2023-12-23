@@ -4,7 +4,6 @@ use pixels_graphics_lib::buffer_graphics_lib::prelude::Positioning::{RightBottom
 use pixels_graphics_lib::buffer_graphics_lib::prelude::TextPos::Px;
 use pixels_graphics_lib::buffer_graphics_lib::prelude::WrappingStrategy::SpaceBeforeCol;
 use pixels_graphics_lib::buffer_graphics_lib::prelude::*;
-use pixels_graphics_lib::graphics_shapes::coord;
 use pixels_graphics_lib::graphics_shapes::triangle::FlatSide;
 use pixels_graphics_lib::prelude::*;
 
@@ -286,17 +285,17 @@ impl Aliens {
         move_sound2: SoundEffect,
     ) -> Self {
         let ships = vec![
-            AnimatedIndexedImage::from_file_contents(include_bytes!("../assets/invader1.ica"))
+            AnimatedIndexedImage::from_file_contents(include_bytes!("../../assets/invader1.ica"))
                 .unwrap()
                 .0,
-            AnimatedIndexedImage::from_file_contents(include_bytes!("../assets/invader2.ica"))
+            AnimatedIndexedImage::from_file_contents(include_bytes!("../../assets/invader2.ica"))
                 .unwrap()
                 .0,
-            AnimatedIndexedImage::from_file_contents(include_bytes!("../assets/invader3.ica"))
+            AnimatedIndexedImage::from_file_contents(include_bytes!("../../assets/invader3.ica"))
                 .unwrap()
                 .0,
         ];
-        let attack = AnimatedIndexedImage::from_file_contents(include_bytes!("../assets/alien_attack.ica"))
+        let attack = AnimatedIndexedImage::from_file_contents(include_bytes!("../../assets/alien_attack.ica"))
             .unwrap()
             .0;
         Self {
@@ -319,7 +318,7 @@ impl Aliens {
 impl Ufo {
     pub fn new(sound: SoundEffect, death_sound: SoundEffect) -> Self {
         let mut sprite =
-            AnimatedIndexedImage::from_file_contents(include_bytes!("../assets/ufo.ica"))
+            AnimatedIndexedImage::from_file_contents(include_bytes!("../../assets/ufo.ica"))
                 .unwrap()
                 .0;
         sprite.set_animate(true);
@@ -367,31 +366,31 @@ impl Invaders {
     pub fn new() -> Box<Self> {
         let audio_engine = AudioEngine::new().unwrap();
         let player_attack = audio_engine
-            .load_from_bytes(include_bytes!("../assets/player_shoot.wav"), 0.5)
+            .load_from_bytes(include_bytes!("../../assets/player_shoot.wav"), 0.5)
             .unwrap();
         let player_death = audio_engine
-            .load_from_bytes(include_bytes!("../assets/player_dead.wav"), 1.0)
+            .load_from_bytes(include_bytes!("../../assets/player_dead.wav"), 1.0)
             .unwrap();
         let mut ufo = audio_engine
-            .load_from_bytes(include_bytes!("../assets/ufo.wav"), 1.7)
+            .load_from_bytes(include_bytes!("../../assets/ufo.wav"), 1.7)
             .unwrap();
         let ufo_dead = audio_engine
-            .load_from_bytes(include_bytes!("../assets/invader_dead.wav"), 0.5)
+            .load_from_bytes(include_bytes!("../../assets/invader_dead.wav"), 0.5)
             .unwrap();
         let invader_dead = audio_engine
-            .load_from_bytes(include_bytes!("../assets/invader_dead.wav"), 0.5)
+            .load_from_bytes(include_bytes!("../../assets/invader_dead.wav"), 0.5)
             .unwrap();
         let invader_move1 = audio_engine
-            .load_from_bytes(include_bytes!("../assets/invader_move_1.wav"), 0.2)
+            .load_from_bytes(include_bytes!("../../assets/invader_move_1.wav"), 0.2)
             .unwrap();
         let invader_move2 = audio_engine
-            .load_from_bytes(include_bytes!("../assets/invader_move_2.wav"), 0.2)
+            .load_from_bytes(include_bytes!("../../assets/invader_move_2.wav"), 0.2)
             .unwrap();
 
         ufo.set_loop(true);
 
         let block = Drawable::from_obj(Rect::new((0, 0), (4, 4)), fill(CLR_BASE));
-        let heart = IndexedImage::from_file_contents(include_bytes!("../assets/heart.ici"))
+        let heart = IndexedImage::from_file_contents(include_bytes!("../../assets/heart.ici"))
             .unwrap()
             .0;
 
@@ -446,7 +445,7 @@ impl Invaders {
 }
 
 impl Game for Invaders {
-    fn render(&self, graphics: &mut Graphics) {
+    fn render(&self, graphics: &mut Graphics, controller: Option<Controller>) {
         for i in 1..=self.lives {
             graphics.draw_indexed_image(
                 (HEART_XY.x + (HEART_SPACE * (i as isize - 1)), HEART_XY.y),
@@ -503,7 +502,7 @@ impl Game for Invaders {
     fn on_key_press(&mut self, _: KeyCode) {}
 
     #[allow(clippy::collapsible_if)] //for readability
-    fn update(&mut self, timing: &Timing, held_keys: &Vec<&KeyCode>) -> GameUpdateResult {
+    fn update(&mut self, timing: &Timing, held_keys: &Vec<&KeyCode>, controller: &GameController) -> GameUpdateResult {
         self.controller.update();
         self.ufo.active_sound.update(timing);
         self.ufo.death_sound.update(timing);

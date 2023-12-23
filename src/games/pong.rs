@@ -1,4 +1,3 @@
-use crate::pong::Direction::*;
 use crate::GameUpdateResult::{Nothing, Pop};
 use crate::{Game, GameUpdateResult, CLR_2, CLR_3, SCREEN_HEIGHT, SCREEN_WIDTH};
 use pixels_graphics_lib::buffer_graphics_lib::prelude::*;
@@ -8,6 +7,7 @@ use pixels_graphics_lib::buffer_graphics_lib::text::pos::TextPos;
 use pixels_graphics_lib::buffer_graphics_lib::text::Text;
 use pixels_graphics_lib::buffer_graphics_lib::text::TextSize::Large;
 use pixels_graphics_lib::prelude::*;
+use crate::games::pong::Direction::*;
 
 const PADDLE_X_H: usize = 0;
 const PADDLE_X_C: usize = SCREEN_WIDTH - 6;
@@ -79,13 +79,13 @@ impl Pong {
     pub fn new() -> Box<Self> {
         let audio_engine = AudioEngine::new().unwrap();
         let wall = audio_engine
-            .load_from_bytes(include_bytes!("../assets/wall.wav"), 0.2)
+            .load_from_bytes(include_bytes!("../../assets/wall.wav"), 0.2)
             .unwrap();
         let paddle = audio_engine
-            .load_from_bytes(include_bytes!("../assets/paddle.wav"), 0.2)
+            .load_from_bytes(include_bytes!("../../assets/paddle.wav"), 0.2)
             .unwrap();
         let miss = audio_engine
-            .load_from_bytes(include_bytes!("../assets/ball.wav"), 0.4)
+            .load_from_bytes(include_bytes!("../../assets/ball.wav"), 0.4)
             .unwrap();
 
         let separator = Drawable::from_obj(
@@ -123,7 +123,7 @@ impl Pong {
 }
 
 impl Game for Pong {
-    fn render(&self, graphics: &mut Graphics) {
+    fn render(&self, graphics: &mut Graphics, controller: Option<Controller>) {
         self.separator.render(graphics);
 
         graphics.draw(&Text::new(
@@ -145,8 +145,7 @@ impl Game for Pong {
     fn on_key_press(&mut self, _: KeyCode) {}
 
     #[allow(clippy::collapsible_if)] //for readability
-    fn update(&mut self, timing: &Timing, held_keys: &Vec<&KeyCode>) -> GameUpdateResult {
-        self.controller.update();
+    fn update(&mut self, timing: &Timing, held_keys: &Vec<&KeyCode>, controller: &GameController) -> GameUpdateResult {
         self.wall.update(timing);
         self.paddle.update(timing);
         self.miss.update(timing);

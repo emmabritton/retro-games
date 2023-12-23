@@ -10,7 +10,7 @@ Also supports gamepads
 
 - Up - Move cursor up
 - Down - Move cursor down
-- Return/X/A - Select game
+- Space/X/A - Select game
 - Escape/O/B - Close program
 
 ## Pong
@@ -25,9 +25,16 @@ Also supports gamepads
 - Up/Down/Left/Right - Set snake direction
 - Escape/O/B - Return to menu
 
+## Invaders
+
+- Left/Right - Move tank
+- Space/X/A - Shoot
+- Escape/O/B - Return to menu
+
 # Screenshots
 
 ![pong](/.github/screenshots/pong.png)
 ![snake](/.github/screenshots/snake.png)
+![invaders](/.github/screenshots/invaders.png)
 
 
