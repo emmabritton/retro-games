@@ -1,11 +1,8 @@
 use crate::GameName::{Invaders, Pong, Snake};
 use crate::GameUpdateResult::{Nothing, Pop, Push};
-use crate::{Game, GameUpdateResult, CLR_2, CLR_3, INPUT_DELAY, SCREEN_HEIGHT, SCREEN_WIDTH};
+use crate::{Game, GameUpdateResult, CLR_2, CLR_3, INPUT_DELAY, SCREEN_WIDTH, SCREEN_HEIGHT};
 use pixels_graphics_lib::buffer_graphics_lib::prelude::Positioning::LeftTop;
 use pixels_graphics_lib::buffer_graphics_lib::prelude::TextPos::Px;
-use pixels_graphics_lib::buffer_graphics_lib::prelude::*;
-use pixels_graphics_lib::graphics_shapes::coord;
-use pixels_graphics_lib::graphics_shapes::triangle::FlatSide;
 use pixels_graphics_lib::prelude::*;
 use crate::button_bar::{BAR_HEIGHT, ButtonBar, ButtonDef};
 

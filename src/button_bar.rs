@@ -2,14 +2,8 @@ use std::collections::HashMap;
 use std::hash::Hash;
 use std::sync::OnceLock;
 use log::error;
-use pixels_graphics_lib::buffer_graphics_lib::Graphics;
-use pixels_graphics_lib::buffer_graphics_lib::prelude::{Coord, fill, IndexedImage, TextPos, WrappingStrategy};
-use pixels_graphics_lib::buffer_graphics_lib::color::{BLUE, GB_3};
-use pixels_graphics_lib::buffer_graphics_lib::text::TextSize;
 use pixels_graphics_lib::buffer_graphics_lib::text::TextSize::Small;
-use pixels_graphics_lib::graphics_shapes::coord;
-use pixels_graphics_lib::graphics_shapes::rect::Rect;
-use pixels_graphics_lib::prelude::Controller;
+use pixels_graphics_lib::prelude::*;
 
 pub const BAR_HEIGHT: usize = 20;
 pub const ICON_SIZE: (usize, usize) = (17,17);

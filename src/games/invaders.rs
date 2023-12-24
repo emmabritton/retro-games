@@ -1,11 +1,9 @@
 use crate::GameUpdateResult::{Nothing, Pop};
 use crate::{Game, GameUpdateResult, CLR_1, CLR_2, CLR_3, SCREEN_HEIGHT, SCREEN_WIDTH};
-use pixels_graphics_lib::buffer_graphics_lib::prelude::Positioning::{RightBottom, RightTop};
-use pixels_graphics_lib::buffer_graphics_lib::prelude::TextPos::Px;
-use pixels_graphics_lib::buffer_graphics_lib::prelude::WrappingStrategy::SpaceBeforeCol;
-use pixels_graphics_lib::buffer_graphics_lib::prelude::*;
-use pixels_graphics_lib::graphics_shapes::triangle::FlatSide;
 use pixels_graphics_lib::prelude::*;
+use pixels_graphics_lib::prelude::Positioning::{RightBottom, RightTop};
+use pixels_graphics_lib::prelude::TextPos::Px;
+use pixels_graphics_lib::prelude::WrappingStrategy::SpaceBeforeCol;
 
 const CLR_SHIP: Color = CLR_3;
 const CLR_ATTACK: Color = CLR_3;
