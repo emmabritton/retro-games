@@ -1,6 +1,10 @@
-mod games;
 mod button_bar;
+mod games;
 
+use crate::games::invaders::Invaders;
+use crate::games::menu::GameMenu;
+use crate::games::pong::Pong;
+use crate::games::snake::Snake;
 use color_eyre::Result;
 use log::LevelFilter;
 use pixels_graphics_lib::buffer_graphics_lib::color::Color;
@@ -11,10 +15,6 @@ use pixels_graphics_lib::buffer_graphics_lib::text::TextSize::Small;
 use pixels_graphics_lib::buffer_graphics_lib::Graphics;
 use pixels_graphics_lib::prelude::*;
 use std::collections::HashSet;
-use crate::games::invaders::Invaders;
-use crate::games::menu::GameMenu;
-use crate::games::pong::Pong;
-use crate::games::snake::Snake;
 
 const SCREEN_WIDTH: usize = 160;
 const SCREEN_HEIGHT: usize = 166;
@@ -55,7 +55,7 @@ struct GameHost {
     game_stack: Vec<Box<dyn Game>>,
     held_keys: HashSet<KeyCode>,
     controller: GameController,
-    keyboard: bool
+    keyboard: bool,
 }
 
 impl GameHost {
@@ -64,7 +64,7 @@ impl GameHost {
             game_stack: vec![Box::new(GameMenu::new())],
             held_keys: HashSet::new(),
             controller: GameController::new_unchecked(),
-            keyboard: false
+            keyboard: false,
         }
     }
 }
@@ -154,7 +154,12 @@ trait Game {
     fn render(&self, graphics: &mut Graphics, controller: Option<Controller>);
     fn on_key_press(&mut self, key: KeyCode);
     #[allow(clippy::ptr_arg)] //breaks other code if changed
-    fn update(&mut self, timing: &Timing, held_keys: &Vec<&KeyCode>, controller: &GameController) -> GameUpdateResult;
+    fn update(
+        &mut self,
+        timing: &Timing,
+        held_keys: &Vec<&KeyCode>,
+        controller: &GameController,
+    ) -> GameUpdateResult;
     fn resuming(&mut self);
 }
 

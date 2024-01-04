@@ -1,3 +1,4 @@
+use crate::games::pong::Direction::*;
 use crate::GameUpdateResult::{Nothing, Pop};
 use crate::{Game, GameUpdateResult, CLR_2, CLR_3, SCREEN_HEIGHT, SCREEN_WIDTH};
 use pixels_graphics_lib::buffer_graphics_lib::prelude::*;
@@ -7,7 +8,6 @@ use pixels_graphics_lib::buffer_graphics_lib::text::pos::TextPos;
 use pixels_graphics_lib::buffer_graphics_lib::text::Text;
 use pixels_graphics_lib::buffer_graphics_lib::text::TextSize::Large;
 use pixels_graphics_lib::prelude::*;
-use crate::games::pong::Direction::*;
 
 const PADDLE_X_H: usize = 0;
 const PADDLE_X_C: usize = SCREEN_WIDTH - 6;
@@ -145,7 +145,12 @@ impl Game for Pong {
     fn on_key_press(&mut self, _: KeyCode) {}
 
     #[allow(clippy::collapsible_if)] //for readability
-    fn update(&mut self, timing: &Timing, held_keys: &Vec<&KeyCode>, controller: &GameController) -> GameUpdateResult {
+    fn update(
+        &mut self,
+        timing: &Timing,
+        held_keys: &Vec<&KeyCode>,
+        controller: &GameController,
+    ) -> GameUpdateResult {
         self.wall.update(timing);
         self.paddle.update(timing);
         self.miss.update(timing);

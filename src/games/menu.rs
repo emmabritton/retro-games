@@ -1,10 +1,10 @@
+use crate::button_bar::{ButtonBar, ButtonDef, BAR_HEIGHT};
 use crate::GameName::{Invaders, Pong, Snake};
 use crate::GameUpdateResult::{Nothing, Pop, Push};
-use crate::{Game, GameUpdateResult, CLR_2, CLR_3, INPUT_DELAY, SCREEN_WIDTH, SCREEN_HEIGHT};
+use crate::{Game, GameUpdateResult, CLR_2, CLR_3, INPUT_DELAY, SCREEN_HEIGHT, SCREEN_WIDTH};
 use pixels_graphics_lib::buffer_graphics_lib::prelude::Positioning::LeftTop;
 use pixels_graphics_lib::buffer_graphics_lib::prelude::TextPos::Px;
 use pixels_graphics_lib::prelude::*;
-use crate::button_bar::{BAR_HEIGHT, ButtonBar, ButtonDef};
 
 const TITLE: &str = "Games";
 const OPTIONS: [&str; 3] = ["Pong", "Snake", "Invaders"];
@@ -22,7 +22,7 @@ pub struct GameMenu {
     frame: ShapeCollection,
     result: GameUpdateResult,
     input_timer: Timer,
-    button_bar: ButtonBar
+    button_bar: ButtonBar,
 }
 
 impl GameMenu {
@@ -32,7 +32,7 @@ impl GameMenu {
             Triangle::equilateral((CURSOR_X + 3, MENU_START_Y + 3), 6, FlatSide::Left),
             fill(CLR_3),
         );
-        let frame = ShapeCollection::new();
+        let frame = ShapeCollection::default();
         let options = OPTIONS
             .iter()
             .enumerate()
@@ -60,8 +60,8 @@ impl GameMenu {
                     ("Exit", ButtonDef::Escape),
                     ("Cursor", ButtonDef::Vert),
                     ("Play", ButtonDef::Space),
-                ]
-            )
+                ],
+            ),
         }
     }
 }
@@ -80,7 +80,12 @@ impl Game for GameMenu {
 
     fn on_key_press(&mut self, _: KeyCode) {}
 
-    fn update(&mut self, timing: &Timing, held_keys: &Vec<&KeyCode>, controller: &GameController) -> GameUpdateResult {
+    fn update(
+        &mut self,
+        timing: &Timing,
+        held_keys: &Vec<&KeyCode>,
+        controller: &GameController,
+    ) -> GameUpdateResult {
         self.cursor = self.cursor.with_move((
             CURSOR_X,
             MENU_START_Y + 1 + (self.cursor_idx * MENU_STEP) as isize,

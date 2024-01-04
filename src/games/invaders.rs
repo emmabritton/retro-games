@@ -1,9 +1,9 @@
 use crate::GameUpdateResult::{Nothing, Pop};
 use crate::{Game, GameUpdateResult, CLR_1, CLR_2, CLR_3, SCREEN_HEIGHT, SCREEN_WIDTH};
-use pixels_graphics_lib::prelude::*;
 use pixels_graphics_lib::prelude::Positioning::{RightBottom, RightTop};
 use pixels_graphics_lib::prelude::TextPos::Px;
 use pixels_graphics_lib::prelude::WrappingStrategy::SpaceBeforeCol;
+use pixels_graphics_lib::prelude::*;
 
 const CLR_SHIP: Color = CLR_3;
 const CLR_ATTACK: Color = CLR_3;
@@ -79,7 +79,7 @@ struct Aliens {
     next_move_sound: usize,
     attacks: Vec<EnemyAttack>,
     next_attack: f64,
-    attack: AnimatedIndexedImage
+    attack: AnimatedIndexedImage,
 }
 
 impl Aliens {
@@ -87,9 +87,9 @@ impl Aliens {
     fn coord_for_ship(&self, y: usize, x: usize) -> Coord {
         self.offset
             + (
-            x * (ALIEN_SPACING.0 + ALIEN_SIZE.0),
-            y * (ALIEN_SPACING.1 + ALIEN_SIZE.1),
-        )
+                x * (ALIEN_SPACING.0 + ALIEN_SIZE.0),
+                y * (ALIEN_SPACING.1 + ALIEN_SIZE.1),
+            )
     }
 
     #[inline]
@@ -97,9 +97,9 @@ impl Aliens {
         Rect::new_with_size(
             self.offset
                 + (
-                x * (ALIEN_SPACING.0 + ALIEN_SIZE.0),
-                y * (ALIEN_SPACING.1 + ALIEN_SIZE.1),
-            ),
+                    x * (ALIEN_SPACING.0 + ALIEN_SIZE.0),
+                    y * (ALIEN_SPACING.1 + ALIEN_SIZE.1),
+                ),
             ALIEN_SIZE.0,
             ALIEN_SIZE.1,
         )
@@ -140,21 +140,19 @@ impl Aliens {
     }
 
     fn random_attack_position(&self) -> Option<Coord> {
-        let mut positions: Vec<Coord> =self.alive
+        let mut positions: Vec<Coord> = self
+            .alive
             .iter()
             .enumerate()
-            .map(|(y, row)|
-                row.iter()
-                    .enumerate()
-                    .filter_map(move |(x, alive)| {
-                        if *alive {
-                            Some(self.coord_for_ship(y,x) + (ALIEN_SIZE.0 /2, ALIEN_SIZE.1))
-                        } else {
-                            None
-                        }
-                    })
-                )
-                .flatten()
+            .flat_map(|(y, row)| {
+                row.iter().enumerate().filter_map(move |(x, alive)| {
+                    if *alive {
+                        Some(self.coord_for_ship(y, x) + (ALIEN_SIZE.0 / 2, ALIEN_SIZE.1))
+                    } else {
+                        None
+                    }
+                })
+            })
             .collect();
         if positions.is_empty() {
             return None;
@@ -293,9 +291,11 @@ impl Aliens {
                 .unwrap()
                 .0,
         ];
-        let attack = AnimatedIndexedImage::from_file_contents(include_bytes!("../../assets/alien_attack.ica"))
-            .unwrap()
-            .0;
+        let attack = AnimatedIndexedImage::from_file_contents(include_bytes!(
+            "../../assets/alien_attack.ica"
+        ))
+        .unwrap()
+        .0;
         Self {
             death_sound,
             move_sounds: [move_sound1, move_sound2],
@@ -308,7 +308,7 @@ impl Aliens {
             next_move_sound: 0,
             attacks: vec![],
             next_attack: ALIEN_ATTACK_RATE * 2.0,
-            attack
+            attack,
         }
     }
 }
@@ -334,7 +334,7 @@ impl Ufo {
 
 impl Player {
     pub fn new(attack_sound: SoundEffect, death_sound: SoundEffect) -> Self {
-        let mut ship = ShapeCollection::new();
+        let mut ship = ShapeCollection::default();
         InsertShape::insert_above(
             &mut ship,
             Triangle::equilateral((10, 10), 10, FlatSide::Bottom),
@@ -342,7 +342,7 @@ impl Player {
         );
         InsertShape::insert_above(&mut ship, Rect::new((0, 10), (20, 16)), fill(CLR_SHIP));
         ship = ship.with_move((70, PLAYER_Y));
-        let mut attack = ShapeCollection::new();
+        let mut attack = ShapeCollection::default();
         InsertShape::insert_above(&mut attack, Rect::new((0, 0), (1, 6)), fill(CLR_ATTACK));
         Self {
             attack_sound,
@@ -356,7 +356,10 @@ impl Player {
     }
 
     pub fn bounds(&self) -> Rect {
-        Rect::new((self.ship.left(), self.ship.top()), (self.ship.right(), self.ship.bottom()))
+        Rect::new(
+            (self.ship.left(), self.ship.top()),
+            (self.ship.right(), self.ship.bottom()),
+        )
     }
 }
 
@@ -422,7 +425,7 @@ impl Invaders {
 
     fn detect_alien_attack_hit(&mut self, timing: &Timing) -> bool {
         let mut remove = vec![];
-        for (i,attack) in self.aliens.attacks.iter_mut().enumerate() {
+        for (i, attack) in self.aliens.attacks.iter_mut().enumerate() {
             attack.next_move -= timing.fixed_time_step;
             if attack.next_move <= 0.0 {
                 attack.xy = attack.xy + (0, 1);
@@ -500,7 +503,12 @@ impl Game for Invaders {
     fn on_key_press(&mut self, _: KeyCode) {}
 
     #[allow(clippy::collapsible_if)] //for readability
-    fn update(&mut self, timing: &Timing, held_keys: &Vec<&KeyCode>, controller: &GameController) -> GameUpdateResult {
+    fn update(
+        &mut self,
+        timing: &Timing,
+        held_keys: &Vec<&KeyCode>,
+        controller: &GameController,
+    ) -> GameUpdateResult {
         self.controller.update();
         self.ufo.active_sound.update(timing);
         self.ufo.death_sound.update(timing);
@@ -604,7 +612,7 @@ impl Game for Invaders {
                 self.ufo.sprite.width() as usize,
                 self.ufo.sprite.height() as usize,
             )
-                .contains(attack.xy)
+            .contains(attack.xy)
             {
                 to_delete.push(i);
                 self.score += SCORE_UFO;

@@ -1,3 +1,5 @@
+use crate::games::snake::Direction::*;
+use crate::games::snake::State::*;
 use crate::GameUpdateResult::{Nothing, Pop};
 use crate::{
     Game, GameUpdateResult, CLR_0, CLR_1, CLR_2, CLR_3, INPUT_DELAY, SCREEN_HEIGHT, SCREEN_WIDTH,
@@ -9,8 +11,6 @@ use pixels_graphics_lib::buffer_graphics_lib::text::pos::TextPos;
 use pixels_graphics_lib::buffer_graphics_lib::text::TextSize::Large;
 use pixels_graphics_lib::prelude::*;
 use std::ops::Neg;
-use crate::games::snake::Direction::*;
-use crate::games::snake::State::*;
 
 const TILE_SIZE: usize = 8;
 const ARENA_WIDTH: usize = 18;
@@ -135,7 +135,7 @@ impl Snake {
 }
 
 impl Game for Snake {
-    fn render(&self, graphics: &mut Graphics,controller: Option<Controller>) {
+    fn render(&self, graphics: &mut Graphics, controller: Option<Controller>) {
         graphics.update_translate(ARENA_START + (1, 0));
 
         let wall_horz_size = ARENA_WIDTH + 1;
@@ -223,7 +223,12 @@ impl Game for Snake {
     fn on_key_press(&mut self, _: KeyCode) {}
 
     #[allow(clippy::collapsible_if)] //for readability
-    fn update(&mut self, timing: &Timing, held: &Vec<&KeyCode>, controller: &GameController) -> GameUpdateResult {
+    fn update(
+        &mut self,
+        timing: &Timing,
+        held: &Vec<&KeyCode>,
+        controller: &GameController,
+    ) -> GameUpdateResult {
         if self.input_timer.update(timing) && self.state == Playing {
             if held.contains(&&KeyCode::ArrowUp) || controller.direction.up {
                 let next = self.body[0] + Up.delta();
