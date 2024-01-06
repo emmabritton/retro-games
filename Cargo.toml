@@ -16,7 +16,7 @@ lto = true
 codegen-units = 1
 
 [dependencies]
-pixels-graphics-lib = { version = "0.15.2", features = ["controller"] }
+pixels-graphics-lib = { version="0.15.3", features = ["controller"] }
 log = "0.4.20"
 env_logger = "0.10.1"
 color-eyre = "0.6.2"
