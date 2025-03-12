@@ -1,56 +1,30 @@
-mod menu;
-mod pong;
-mod snake;
+#![windows_subsystem = "windows"]
 
-use crate::menu::GameMenu;
-use crate::pong::Pong;
-use crate::snake::Snake;
+mod button_bar;
+mod games;
+
+use crate::games::menu::GameMenu;
+use crate::games::pong::Pong;
+use crate::games::snake::Snake;
 use color_eyre::Result;
-use pixels_graphics_lib::buffer_graphics_lib::color::Color;
+use log::LevelFilter;
+use pixels_graphics_lib::buffer_graphics_lib::prelude::*;
 use pixels_graphics_lib::buffer_graphics_lib::text::format::Positioning::LeftBottom;
 use pixels_graphics_lib::buffer_graphics_lib::text::pos::TextPos;
-use pixels_graphics_lib::buffer_graphics_lib::text::TextSize::Small;
-use pixels_graphics_lib::prefs::WindowPreferences;
+use pixels_graphics_lib::buffer_graphics_lib::Graphics;
+use pixels_graphics_lib::prelude::PixelFont::Standard4x5;
 use pixels_graphics_lib::prelude::*;
 use std::collections::HashSet;
-use log::LevelFilter;
-use winit::event::VirtualKeyCode;
 
 const SCREEN_WIDTH: usize = 160;
-const SCREEN_HEIGHT: usize = 144;
-const TILES_SIZE: usize = 8;
-const TILES_HORZ: usize = 20;
-const TILES_VERT: usize = 18;
+const SCREEN_HEIGHT: usize = 166;
 
-const CLR_3: Color = Color {
-    r: 15,
-    g: 56,
-    b: 15,
-    a: 255,
-};
+const INPUT_DELAY: f64 = 0.2;
 
-const CLR_2: Color = Color {
-    r: 48,
-    g: 98,
-    b: 48,
-    a: 255,
-};
-
-const CLR_1: Color = Color {
-    r: 139,
-    g: 172,
-    b: 15,
-    a: 255,
-};
-
-const CLR_0: Color = Color {
-    r: 155,
-    g: 188,
-    b: 15,
-    a: 255,
-};
-
-const COLORS: [Color; 4] = [CLR_0, CLR_1, CLR_2, CLR_3];
+const CLR_3: Color = GB_3;
+const CLR_2: Color = GB_2;
+const CLR_1: Color = GB_1;
+const CLR_0: Color = GB_0;
 
 fn main() -> Result<()> {
     color_eyre::install()?;
@@ -64,19 +38,24 @@ fn main() -> Result<()> {
 
     let system = Box::new(GameHost::new());
     run(
-        160,
-        144,
-        WindowScaling::Auto,
-        "Games",
+        SCREEN_WIDTH,
+        SCREEN_HEIGHT,
+        "Retro Games",
         system,
-        ExecutionSpeed::new(60),
+        Options {
+            ups: 60,
+            vsync: true,
+            ..Options::default()
+        },
     )?;
     Ok(())
 }
 
 struct GameHost {
     game_stack: Vec<Box<dyn Game>>,
-    held_keys: HashSet<VirtualKeyCode>,
+    held_keys: HashSet<KeyCode>,
+    controller: GameController,
+    keyboard: bool,
 }
 
 impl GameHost {
@@ -84,32 +63,35 @@ impl GameHost {
         Self {
             game_stack: vec![Box::new(GameMenu::new())],
             held_keys: HashSet::new(),
+            controller: GameController::new_unchecked(),
+            keyboard: false,
         }
     }
 }
 
 impl System for GameHost {
-    fn action_keys(&self) -> Vec<VirtualKeyCode> {
-        vec![
-            VirtualKeyCode::Up,
-            VirtualKeyCode::Down,
-            VirtualKeyCode::Left,
-            VirtualKeyCode::Right,
-            VirtualKeyCode::Escape,
-            VirtualKeyCode::Space,
-            VirtualKeyCode::Return,
-            VirtualKeyCode::RControl,
-            VirtualKeyCode::LControl,
+    fn keys_used(&self) -> &[KeyCode] {
+        &[
+            KeyCode::ArrowUp,
+            KeyCode::ArrowDown,
+            KeyCode::ArrowLeft,
+            KeyCode::ArrowRight,
+            KeyCode::Escape,
+            KeyCode::Space,
         ]
     }
 
-    fn window_prefs(&self) -> Option<WindowPreferences> {
-        Some(WindowPreferences::new("app", "emmabritton", "retro_games").unwrap())
+    fn window_prefs(&mut self) -> Option<WindowPreferences> {
+        Some(WindowPreferences::new("app", "emmabritton", "retro_games", 3).unwrap())
     }
 
-    fn update(&mut self, timing: &Timing) {
+    fn update(&mut self, timing: &Timing, _: &Window) {
+        self.controller.update();
+        if self.controller.mask() != 0 {
+            self.keyboard = false;
+        }
         if let Some(game) = self.game_stack.last_mut() {
-            match game.update(timing, &self.held_keys.iter().collect()) {
+            match game.update(timing, &self.held_keys.iter().collect(), &self.controller) {
                 GameUpdateResult::Nothing => {}
                 GameUpdateResult::Push(new_game) => match new_game {
                     GameName::Pong => self.game_stack.push(Pong::new()),
@@ -125,53 +107,58 @@ impl System for GameHost {
         }
     }
 
-    fn render(&self, graphics: &mut Graphics) {
+    fn render(&mut self, graphics: &mut Graphics) {
         graphics.clear(CLR_0);
         if let Some(game) = self.game_stack.last() {
-            game.render(graphics);
+            let controller = if self.keyboard {
+                None
+            } else {
+                self.controller.get_controller_type()
+            };
+            game.render(graphics, controller);
         }
-        let txt = self
-            .held_keys
-            .iter()
-            .map(|k| format!("{k:?}"))
-            .collect::<Vec<String>>()
-            .join(", ");
-        graphics.draw_text(
-            &txt,
-            TextPos::Px(0, SCREEN_HEIGHT as isize),
-            (CLR_1, Small, LeftBottom),
-        );
-    }
-
-    fn on_key_pressed(&mut self, keys: Vec<VirtualKeyCode>) {
-        if let Some(game) = self.game_stack.last_mut() {
-            for key in keys {
-                game.on_key_press(key)
-            }
+        if cfg!(debug_assertions) {
+            graphics.draw_text(
+                "",
+                TextPos::Px(0, SCREEN_HEIGHT as isize),
+                (CLR_1, Standard4x5, LeftBottom),
+            );
         }
     }
 
-    fn on_key_down(&mut self, keys: Vec<VirtualKeyCode>) {
+    fn on_key_down(&mut self, keys: Vec<KeyCode>) {
+        self.keyboard = true;
         for key in keys {
             self.held_keys.insert(key);
         }
     }
 
-    fn on_key_up(&mut self, keys: Vec<VirtualKeyCode>) {
-        for key in keys {
-            self.held_keys.remove(&key);
+    fn on_key_up(&mut self, keys: Vec<KeyCode>) {
+        for key in &keys {
+            self.held_keys.remove(key);
+        }
+        if let Some(game) = self.game_stack.last_mut() {
+            for key in &keys {
+                game.on_key_press(*key)
+            }
         }
     }
 
-    fn should_exit(&self) -> bool {
+    fn should_exit(&mut self) -> bool {
         self.game_stack.is_empty()
     }
 }
 
 trait Game {
-    fn render(&self, graphics: &mut Graphics);
-    fn on_key_press(&mut self, key: VirtualKeyCode);
-    fn update(&mut self, timing: &Timing, held_keys: &Vec<&VirtualKeyCode>) -> GameUpdateResult;
+    fn render(&self, graphics: &mut Graphics, controller: Option<Controller>);
+    fn on_key_press(&mut self, key: KeyCode);
+    #[allow(clippy::ptr_arg)] //breaks other code if changed
+    fn update(
+        &mut self,
+        timing: &Timing,
+        held_keys: &Vec<&KeyCode>,
+        controller: &GameController,
+    ) -> GameUpdateResult;
     fn resuming(&mut self);
 }
 

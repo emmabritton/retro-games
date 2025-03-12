@@ -4,28 +4,37 @@ A few simple retro games built with [pixels-graphics-lib](https://github.com/emm
 
 # Controls
 
+Also supports gamepads
+
 ## Menu
 
 - Up - Move cursor up
 - Down - Move cursor down
-- Return - Select game
-- Escape - Close program
+- Space/X/A - Select game
+- Escape/O/B - Close program
 
 ## Pong
 
 - Up - Move paddle up
 - Down - Move paddle down
-- Space - Serve ball
-- Escape - Return to menu
+- Space/X/A - Serve ball
+- Escape/O/B - Return to menu
 
 ## Snake
 
 - Up/Down/Left/Right - Set snake direction
-- Escape - Return to menu
+- Escape/O/B - Return to menu
+
+## Invaders
+
+- Left/Right - Move tank
+- Space/X/A - Shoot
+- Escape/O/B - Return to menu
 
 # Screenshots
 
-![pong](/.github/pong.png)
-![snake](/.github/snake.png)
+![pong](/.github/screenshots/pong.png)
+![snake](/.github/screenshots/snake.png)
+![invaders](/.github/screenshots/invaders.png)
 
 
